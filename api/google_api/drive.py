@@ -121,7 +121,7 @@ async def get_folder_contents(
       else:
         raise HTTPException(
           status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-          detail=f"Could not retrieve folder contents. Error: {http_error.reason}",
+          detail=http_error.reason,
         )
 
     except HTTPException:
@@ -131,7 +131,7 @@ async def get_folder_contents(
       # Handle all other errors not specifically handled
       raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f"Could not retrieve folder contents. Error: {str(e)}",
+        detail=str(e),
       )
     
   return results
@@ -181,13 +181,13 @@ async def download_xlsx_file(
       else:
         raise HTTPException(
           status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-          detail=f"Could not retrieve data from xlsx file. Error: {http_error.reason}",
+          detail=http_error.reason,
         )
     
     except Exception as e:
       raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f"Could not retrieve data from xlsx file. Error: {str(e)}"
+        detail=str(e)
       )
     
   return io.BytesIO()
@@ -251,13 +251,13 @@ async def create_copy_of_file(
       else:
         raise HTTPException(
           status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-          detail=f"Could not create copy of file. Error: {http_error.reason}",
+          detail=http_error.reason,
         )
       
     except Exception as e:
       raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f"Could not create copy of file. Error: {str(e)}"
+        detail=str(e)
       )
       
   return ""
@@ -336,11 +336,11 @@ async def create_permissions(
         else:
           raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Could not create permissions for resource. Error: {http_error.reason}",
+            detail=http_error.reason,
           )
         
       except Exception as e:
         raise HTTPException(
           status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-          detail=f"Could not create permissions for resource. Error: {str(e)}"
+          detail=str(e)
         )
