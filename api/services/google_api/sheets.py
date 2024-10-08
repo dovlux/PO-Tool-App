@@ -1,5 +1,4 @@
-# Import necessary libraries for Google Sheets API
-from fastapi import Depends, HTTPException, status
+from fastapi import HTTPException, status
 from fastapi.concurrency import run_in_threadpool
 from google.oauth2 import service_account
 from googleapiclient.discovery import build # type: ignore
@@ -27,7 +26,7 @@ async def get_values(
   sheet_name: str,
   cell_range: str | None = None,
   retries: int = 3,
-  sheets_service: Any = Depends(get_sheets_service),
+  sheets_service: Any = get_sheets_service(),
 ) -> List[List[Any]]:
   """
   Fetch values from a specified range in a Google Sheets spreadsheet.
@@ -60,7 +59,7 @@ async def get_values(
 
   print(
     f"Retrieving values from cells in '{cell_range or 'All Cells'}' range" +
-    f"in {sheet_name} sheet from spreadsheet: {spreadsheet_id}..."
+    f" in {sheet_name} sheet from spreadsheet: {spreadsheet_id}..."
   )
 
   while attempt <= retries:
@@ -111,7 +110,7 @@ async def get_sheet_properties(
   spreadsheet_id: str,
   sheet_name: str,
   retries: int = 3,
-  sheets_service: Any = Depends(get_sheets_service),
+  sheets_service: Any = get_sheets_service(),
 ) -> Dict[str, int | Dict[str, int]]:
   """
   Retrieve the sheet properties (sheetID, row and column count) for a specific sheet within a Google Sheets spreadsheet.
@@ -186,7 +185,7 @@ async def post_values(
   cell_range: str | None = None,
   user_entered: bool = True,
   retries: int = 3,
-  sheets_service: Any = Depends(get_sheets_service),
+  sheets_service: Any = get_sheets_service(),
 ) -> None:
   """
   Post values to a specified range in a Google Sheets spreadsheet.
@@ -255,7 +254,7 @@ async def delete_rows(
     start_index: int,
     end_index: int,
     retries: int = 3,
-    sheets_service: Any = Depends(get_sheets_service),
+    sheets_service: Any = get_sheets_service(),
   ) -> None:
     """
     Delete a group of rows in a Google Sheets spreadsheet.

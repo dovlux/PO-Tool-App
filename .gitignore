@@ -1,2 +1,3 @@
-/venv
-google-api-keys-file.json
+venv/
+*.json
+__pycache__/

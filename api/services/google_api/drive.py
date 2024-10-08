@@ -1,5 +1,4 @@
-# Import necessary libraries for Google Sheets API
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status
 from fastapi.concurrency import run_in_threadpool
 from google.oauth2 import service_account
 from googleapiclient.discovery import build #type: ignore
@@ -27,7 +26,7 @@ def get_drive_service() -> Any:
 async def get_folder_contents(
     folder_id: str,
     retries: int = 3,
-    drive_service: Any = Depends(get_drive_service),
+    drive_service: Any = get_drive_service(),
   ) -> Dict[str, List[Dict[str, str]]]:
   """
   Fetch the contents of a specified Google Drive folder, including subfolders and spreadsheets.
@@ -63,17 +62,20 @@ async def get_folder_contents(
   """
   results: Dict[str, List[Dict[str, str]]] = { "folders": [], "spreadsheets": [], }
   attempt: int = 0
-  folder_access_checked: bool = False
+
+  # Check if folder exists and is accesible
+  try:
+    await run_in_threadpool(drive_service.files().get(fileId=folder_id).execute)
+  except Exception as e:
+    raise HTTPException(
+      status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+      detail="Could not access folder.",
+    )
 
   print(f"Retrieving contents of folder with ID: {folder_id}...")
 
   while attempt <= retries:
     try:
-      # Check if specified folder is accesible to user
-      if not folder_access_checked:
-        await run_in_threadpool(drive_service.files().get(fileId=folder_id).execute)
-        folder_access_checked = True
-
       # Call the Drive API to fetch contents from the specified folder
       response = await run_in_threadpool(
         drive_service.files().list(
@@ -139,7 +141,7 @@ async def get_folder_contents(
 async def download_xlsx_file(
   file_id: str,
   retries: int = 3,
-  drive_service: Any = Depends(get_drive_service),
+  drive_service: Any = get_drive_service(),
 ) -> io.BytesIO:
   attempt: int = 0
 
@@ -197,7 +199,7 @@ async def create_copy_of_file(
   new_file_name: str,
   placement_folder_id: str,
   retries: int = 3,
-  drive_service: Any = Depends(get_drive_service),
+  drive_service: Any = get_drive_service(),
 ) -> str:
   """
   Create a copy of a specified Google Drive file and place it in a target folder with a new name.
@@ -268,7 +270,7 @@ async def create_permissions(
   permission_type: str,
   send_notifications: bool = False,
   retries: int = 3,
-  drive_service: Any = Depends(get_drive_service),
+  drive_service: Any = get_drive_service(),
 ) -> None:
   """
   Create permissions for a Google Drive resource (file or folder) and grant access to specified users.
