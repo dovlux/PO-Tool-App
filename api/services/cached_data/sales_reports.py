@@ -7,13 +7,13 @@ import asyncio
 from api.services.google_api import drive as drive_services
 from api.services.google_api import sheets_utils
 from api.services.utils.send_emails import send_error_email
-from api.models.spreadsheets import SheetProperties, RowDicts
-from api.models.cache import SalesReportsUpdateStatus
+from api.models.spreadsheets import RowDicts, SalesReportProperties
+from api.models.cache import CachedDataUpdateStatus
 
 # Global variables for sales reports
 sales_reports_rows: Dict[str, RowDicts] = { "row_dicts": RowDicts(row_dicts=[]) }
 
-sales_reports_update_status = SalesReportsUpdateStatus(
+sales_reports_update_status = CachedDataUpdateStatus(
   update_time=datetime.now(),
   status="Pending Initial Update",
 )
@@ -42,7 +42,7 @@ def get_updated_sales_reports_rows() -> RowDicts:
   
   return sales_reports_rows["row_dicts"]
 
-def get_sales_reports_update_status() -> SalesReportsUpdateStatus:
+def get_sales_reports_update_status() -> CachedDataUpdateStatus:
   return sales_reports_update_status
 
 async def update_sales_reports(repeat: bool):
@@ -50,8 +50,9 @@ async def update_sales_reports(repeat: bool):
   This function will be called on application startup to update the sales reports
   once a day. (Can be called manually as well)
   """
-  months_span: int = 6
   run_update: bool = True
+  months_span: int = 6
+  sales_reports_root_folder_id: str = "1YVeKul5kUUb4hr-bI8M20h2D94JM2W5w"
 
   while run_update:
     try:
@@ -59,7 +60,7 @@ async def update_sales_reports(repeat: bool):
 
       # Retrieve the latest file ids based on months_span
       file_ids = await get_sales_report_file_ids(
-        root_folder_id="1YVeKul5kUUb4hr-bI8M20h2D94JM2W5w",
+        root_folder_id=sales_reports_root_folder_id,
         months_span=months_span,
       )
 
@@ -100,18 +101,7 @@ async def get_sales_reports_rows(file_ids: List[str], months_span: int) -> RowDi
   for file_id in file_ids:
     # Retrieve sheet and sales row values for current sheet
     sheet_values = await sheets_utils.get_row_dicts_from_spreadsheet(
-      ss_properties=SheetProperties(
-        id=file_id,
-        sheet_name="Sheet1",
-        required_headers=[
-          "Transaction Date", "Trans Type", "Order #", "Order Date", "Ship Date",
-          "Marketplace", "Channel Order #", "SKU", "Qty", "Tax", "Discount", "Grand Total",
-          "Accrual Refund", "Payments", "Refunds", "Adjustments",
-          "Grand Total + Adjustmensts - Tax + Accrual Refunds", "Items Cost", "Shipping Cost",
-          "Commission", "Profit", "Brand", "ProductName", "ProductTypeName", "Type", "Gender",
-          "Age Since Received", "Vendor", "Sales Rep"
-        ],
-      )
+      ss_properties=SalesReportProperties(id=file_id)
     )
     sales_rows = sheet_values.row_dicts
 

@@ -150,7 +150,7 @@ async def download_xlsx_file(
   while attempt < retries:
     try:
       # Run blocking I/O operation in a threadpool to avoid blocking the event loop
-      request = await run_in_threadpool(drive_service.files().get_media, file_id)
+      request = await run_in_threadpool(drive_service.files().get_media, fileId=file_id)
 
       file = io.BytesIO()
       downloader = MediaIoBaseDownload(file, request=request)
@@ -158,7 +158,7 @@ async def download_xlsx_file(
       done: bool = False
       while not done:
         # Download chunks in threadpool
-        await run_in_threadpool(downloader.next_chunk)
+        _, done = await run_in_threadpool(downloader.next_chunk)
 
       file.seek(0)
 
