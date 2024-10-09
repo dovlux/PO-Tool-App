@@ -8,21 +8,26 @@ from api.services.google_api import drive as drive_services
 from api.services.google_api import sheets_utils
 from api.services.utils.send_emails import send_error_email
 from api.models.spreadsheets import SheetProperties, RowDicts
+from api.models.cache import SalesReportsUpdateStatus
 
 # Global variables for sales reports
-sales_reports_rows: Dict[str, List[Dict[str, Any]]] = {"row_dicts": []}
-sales_reports_update_time: Dict[str, datetime] = {"update_time": datetime.now()}
+sales_reports_rows: Dict[str, RowDicts] = { "row_dicts": RowDicts(row_dicts=[]) }
 
-def get_updated_sales_reports_rows() -> List[Dict[str, Any]]:
+sales_reports_update_status = SalesReportsUpdateStatus(
+  update_time=datetime.now(),
+  status="Pending Initial Update",
+)
+
+def get_updated_sales_reports_rows() -> RowDicts:
   """
   This function retrieves the global sales reports variable and validates its data
   """
   # Check how long it has been since the last sales reports update
   current_time = datetime.now()
-  time_since_update = current_time - sales_reports_update_time["update_time"]
+  time_since_update = current_time - sales_reports_update_status.update_time
 
   # Raise error if sales reports list is empty
-  if not sales_reports_rows["row_dicts"]:
+  if not sales_reports_rows["row_dicts"].row_dicts:
     raise HTTPException(
       status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
       detail="Could not find sales reports",
@@ -37,14 +42,18 @@ def get_updated_sales_reports_rows() -> List[Dict[str, Any]]:
   
   return sales_reports_rows["row_dicts"]
 
-async def update_sales_reports():
+def get_sales_reports_update_status() -> SalesReportsUpdateStatus:
+  return sales_reports_update_status
+
+async def update_sales_reports(repeat: bool):
   """
   This function will be called on application startup to update the sales reports
-  once a day.
+  once a day. (Can be called manually as well)
   """
   months_span: int = 6
+  run_update: bool = True
 
-  while True:
+  while run_update:
     try:
       print("Updating the sales reports...")
 
@@ -60,20 +69,26 @@ async def update_sales_reports():
       )
 
       # Update the sales reports global variables
-      sales_reports_rows["row_dicts"] = sales_rows.row_dicts
-      sales_reports_update_time["update_time"] = datetime.now()
+      sales_reports_rows["row_dicts"] = sales_rows
+      sales_reports_update_status.update_time = datetime.now()
+      sales_reports_update_status.status = "Updated"
       print("Sales reports finished updating.")
 
     except Exception as e:
       print(f"Could not update sales reports. Error: {str(e)}. Will send error email.")
+      sales_reports_update_status.status = "Error while updating"
       # Send an error email if sales report did not update
       await send_error_email(
         subject="PO Tool Sales Report Update Error",
         error_message=str(e),
       )
 
-    # Repeat once a day
-    await asyncio.sleep(86400)
+    if repeat:
+      # Repeat once a day
+      print("Sales Reports update will run again in one day.")
+      await asyncio.sleep(86400)
+    else:
+      run_update = False
 
 async def get_sales_reports_rows(file_ids: List[str], months_span: int) -> RowDicts:
   """

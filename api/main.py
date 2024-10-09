@@ -1,18 +1,23 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from typing import List, Dict, Any
 import asyncio
 
-from api.services.cached_data.sales_reports import update_sales_reports, get_updated_sales_reports_rows
+from api.services.cached_data.sales_reports import update_sales_reports
+from api.routers.cache import router as cache_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-  asyncio.create_task(update_sales_reports())
+  sales_report_update_task = asyncio.create_task(update_sales_reports(repeat=True))
 
   yield
 
+  sales_report_update_task.cancel()
+
+  try:
+    await sales_report_update_task
+  except asyncio.CancelledError:
+    pass
+
 app = FastAPI(lifespan=lifespan)
 
-@app.get("/sales-reports/")
-async def get_sales_reports() -> Dict[str, List[Dict[str, Any]]]:
-  return {"sales_report_rows": get_updated_sales_reports_rows()[:5]}
+app.include_router(cache_router)
