@@ -25,7 +25,7 @@ class SalesReportProperties(SheetProperties):
 
 class MarketplaceProperties(SheetProperties):
   id: str = "1-WzeSkR_eoLCxLjn8A6-evvRboiFFslS"
-  sheet_name: str = "Marketplacees"
+  sheet_name: str = "Marketplaces"
   required_headers: List[str] = ["Marketplace", "Group"]
 
 class ListPricesProperties(SheetProperties):

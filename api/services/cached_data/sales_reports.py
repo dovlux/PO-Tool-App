@@ -8,12 +8,12 @@ from api.services.google_api import drive as drive_services
 from api.services.google_api import sheets_utils
 from api.services.utils.send_emails import send_error_email
 from api.models.spreadsheets import RowDicts, SalesReportProperties
-from api.models.cache import CachedDataUpdateStatus
+from api.models.cache import UpdateStatus
 
 # Global variables for sales reports
 sales_reports_rows: Dict[str, RowDicts] = { "row_dicts": RowDicts(row_dicts=[]) }
 
-sales_reports_update_status = CachedDataUpdateStatus(
+sales_reports_update_status = UpdateStatus(
   update_time=datetime.now(),
   status="Pending Initial Update",
 )
@@ -42,54 +42,64 @@ def get_updated_sales_reports_rows() -> RowDicts:
   
   return sales_reports_rows["row_dicts"]
 
-def get_sales_reports_update_status() -> CachedDataUpdateStatus:
+def get_sales_reports_update_status() -> UpdateStatus:
   return sales_reports_update_status
 
-async def update_sales_reports(repeat: bool):
+async def update_sales_reports(repeat: bool, retries: int = 3):
   """
   This function will be called on application startup to update the sales reports
   once a day. (Can be called manually as well)
   """
-  run_update: bool = True
   months_span: int = 6
   sales_reports_root_folder_id: str = "1YVeKul5kUUb4hr-bI8M20h2D94JM2W5w"
 
-  while run_update:
-    try:
-      print("Updating the sales reports...")
+  while True:
+    attempt: int = 0
 
-      # Retrieve the latest file ids based on months_span
-      file_ids = await get_sales_report_file_ids(
-        root_folder_id=sales_reports_root_folder_id,
-        months_span=months_span,
-      )
+    while attempt <= retries:
+      try:
+        print("Updating the sales reports...")
 
-      # Retrieve the relevant sales rows from the file ids
-      sales_rows = await get_sales_reports_rows(
-        file_ids=file_ids, months_span=months_span
-      )
+        # Retrieve the latest file ids based on months_span
+        file_ids = await get_sales_report_file_ids(
+          root_folder_id=sales_reports_root_folder_id,
+          months_span=months_span,
+        )
 
-      # Update the sales reports global variables
-      sales_reports_rows["row_dicts"] = sales_rows
-      sales_reports_update_status.update_time = datetime.now()
-      sales_reports_update_status.status = "Updated"
-      print("Sales reports finished updating.")
+        # Retrieve the relevant sales rows from the file ids
+        sales_rows = await get_sales_reports_rows(
+          file_ids=file_ids, months_span=months_span
+        )
 
-    except Exception as e:
-      print(f"Could not update sales reports. Error: {str(e)}. Will send error email.")
-      sales_reports_update_status.status = "Error while updating"
-      # Send an error email if sales report did not update
-      await send_error_email(
-        subject="PO Tool Sales Report Update Error",
-        error_message=str(e),
-      )
+        # Update the sales reports global variables
+        sales_reports_rows["row_dicts"] = sales_rows
+        sales_reports_update_status.update_time = datetime.now()
+        sales_reports_update_status.status = "Updated"
+        print("Sales reports finished updating.")
+
+        break
+
+      except Exception as e:
+        attempt += 1
+        if attempt == retries:
+          print(f"Could not update sales reports. Error: {str(e)}. Will send error email.")
+          sales_reports_update_status.status = "Error while updating"
+          # Send an error email if sales report did not update
+          await send_error_email(
+            subject="PO Tool Sales Report Update Error",
+            error_message=str(e),
+          )
+        else:
+          print(f"There was an error while updating (attempt: {attempt}). Retrying in 5 seconds...")
+          await asyncio.sleep(5)
+          continue
 
     if repeat:
       # Repeat once a day
       print("Sales Reports update will run again in one day.")
       await asyncio.sleep(86400)
     else:
-      run_update = False
+      break
 
 async def get_sales_reports_rows(file_ids: List[str], months_span: int) -> RowDicts:
   """
