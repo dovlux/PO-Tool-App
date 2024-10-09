@@ -7,7 +7,7 @@ from api.services.cached_data import list_prices
 from api.services.cached_data import item_types
 from api.models.cache import CachedDataUpdateStatus
 
-router = APIRouter(prefix="/api/dev/cache", tags=["Cache"])
+router = APIRouter(prefix="/api/dev/cache", tags=["Developer > Cache"])
 
 @router.get("/status", response_model=CachedDataUpdateStatus)
 def get_all_update_statuses():

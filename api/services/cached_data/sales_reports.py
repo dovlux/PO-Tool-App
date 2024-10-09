@@ -7,7 +7,7 @@ import asyncio
 from api.services.google_api import drive as drive_services
 from api.services.google_api import sheets_utils
 from api.services.utils.send_emails import send_error_email
-from api.models.spreadsheets import RowDicts, SalesReportProperties
+from api.models.sheets import RowDicts, SalesReportProperties
 from api.models.cache import UpdateStatus
 
 # Global variables for sales reports

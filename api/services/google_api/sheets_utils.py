@@ -7,7 +7,7 @@ from typing import Any, List, Dict
 
 from api.services.google_api import sheets as sheets_services
 from api.services.google_api import drive as drive_services
-from api.models.spreadsheets import SheetValues, SheetProperties
+from api.models.sheets import SheetValues, SheetProperties
 
 async def get_row_dicts_from_spreadsheet(ss_properties: SheetProperties) -> SheetValues:
   """

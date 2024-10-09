@@ -6,7 +6,7 @@ import asyncio
 from api.services.google_api import sheets_utils
 from api.services.utils.send_emails import send_error_email
 from api.models.cache import UpdateStatus
-from api.models.spreadsheets import ListPricesProperties
+from api.models.sheets import ListPricesProperties
 
 skus_to_list_prices: Dict[str, Dict[str, Any]] = {"skus": {}}
 

@@ -2,11 +2,17 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 import asyncio
 
+from firebase_admin import credentials, initialize_app # type: ignore
+
+cred = credentials.Certificate("google-firebase-adminsdk.json")
+initialize_app(credential=cred)
+
 from api.services.cached_data.sales_reports import update_sales_reports
 from api.services.cached_data.marketplaces import update_marketplaces
 from api.services.cached_data.list_prices import update_list_prices
 from api.services.cached_data.item_types import update_item_types
 from api.routers.cache import router as cache_router
+from api.routers.purchase_orders import router as po_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,3 +39,4 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(cache_router)
+app.include_router(po_router)

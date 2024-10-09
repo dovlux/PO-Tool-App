@@ -9,6 +9,8 @@ from functools import lru_cache
 import io
 import asyncio
 
+from api.models.drive import FileCopyData
+
 @lru_cache()
 def get_drive_service() -> Any:
   """
@@ -195,9 +197,7 @@ async def download_xlsx_file(
   return io.BytesIO()
 
 async def create_copy_of_file(
-  source_file_id: str,
-  new_file_name: str,
-  placement_folder_id: str,
+  file_data: FileCopyData,
   retries: int = 3,
   drive_service: Any = get_drive_service(),
 ) -> str:
@@ -217,15 +217,15 @@ async def create_copy_of_file(
   """
   attempt: int = 0
 
-  print(f"Creating copy of file: {source_file_id}...")
+  print(f"Creating copy of file: {file_data.source_file_id}...")
   
   while attempt < retries:
     try:
       # Call Drive API to make copy of specified source file
       new_file = await run_in_threadpool(
         drive_service.files().copy(
-          fileId=source_file_id,
-          body={ "name": new_file_name, "parents": [placement_folder_id] },
+          fileId=file_data.source_file_id,
+          body={ "name": file_data.new_file_name, "parents": [file_data.placement_folder_id] },
         ).execute
       )
 
@@ -319,6 +319,7 @@ async def create_permissions(
         )
 
         print("Created permissions successfully")
+        break
 
       except HttpError as http_error:
         # Handle HTTP errors returned by the Drive API
