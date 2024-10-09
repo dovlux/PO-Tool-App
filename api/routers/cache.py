@@ -4,6 +4,7 @@ from api.models.response import ResponseMsg
 from api.services.cached_data import sales_reports
 from api.services.cached_data import marketplaces
 from api.services.cached_data import list_prices
+from api.services.cached_data import item_types
 from api.models.cache import CachedDataUpdateStatus
 
 router = APIRouter(prefix="/api/dev/cache", tags=["Cache"])
@@ -14,6 +15,7 @@ def get_all_update_statuses():
     sales_reports=sales_reports.get_sales_reports_update_status(),
     marketplaces=marketplaces.get_marketplaces_update_status(),
     list_prices=list_prices.get_list_price_update_status(),
+    item_types=item_types.get_item_types_update_status(),
   )
 
 @router.get("/sales-reports/update", response_model=ResponseMsg)
@@ -30,3 +32,8 @@ async def update_marketplaces(background_tasks: BackgroundTasks):
 async def update_list_prices(background_tasks: BackgroundTasks):
   background_tasks.add_task(list_prices.update_list_prices, repeat=False)
   return ResponseMsg(message="Update initiated for List Prices.")
+
+@router.get("/item-types/update", response_model=ResponseMsg)
+async def update_item_types(background_tasks: BackgroundTasks):
+  background_tasks.add_task(item_types.update_item_types, repeat=False)
+  return ResponseMsg(message="Update initiated for Item Types.")

@@ -9,3 +9,4 @@ class CachedDataUpdateStatus(BaseModel):
   sales_reports: UpdateStatus
   marketplaces: UpdateStatus
   list_prices: UpdateStatus
+  item_types: UpdateStatus

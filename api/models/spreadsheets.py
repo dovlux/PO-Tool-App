@@ -32,3 +32,8 @@ class ListPricesProperties(SheetProperties):
   id: str = "1FGzOvXv0q3EDxmUzSGvybBr8OUh2tOzXsVHb28p0v-Y"
   sheet_name: str = "Prices"
   required_headers: List[str] = ["ProductID", "ListPrice"]
+
+class ItemTypesProperties(SheetProperties):
+  id: str = "1_sqV63i2p9bzDO-XieUmr8FSapbkxcoLIcd5Ybsl5Fs"
+  sheet_name: str = "Item Types"
+  required_headers: List[str] = ["ProductTypeName", "Gender", "Reporting Category"]
