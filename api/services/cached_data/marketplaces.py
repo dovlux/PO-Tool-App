@@ -11,7 +11,7 @@ from api.models.sheets import MarketplaceProperties
 marketplaces_to_groups: Dict[str, Dict[str, str]] = {"marketplaces": {}}
 
 marketplaces_update_status = UpdateStatus(
-  update_time=datetime.now(),
+  update_time=datetime(year=1899, month=1, day=1),
   status="Pending Initial Update",
 )
 

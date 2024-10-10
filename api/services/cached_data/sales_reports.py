@@ -14,7 +14,7 @@ from api.models.cache import UpdateStatus
 sales_reports_rows: Dict[str, RowDicts] = { "row_dicts": RowDicts(row_dicts=[]) }
 
 sales_reports_update_status = UpdateStatus(
-  update_time=datetime.now(),
+  update_time=datetime(year=1899, month=1, day=1),
   status="Pending Initial Update",
 )
 

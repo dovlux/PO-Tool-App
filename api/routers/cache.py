@@ -1,22 +1,23 @@
 from fastapi import APIRouter, BackgroundTasks
+from typing import List
 
 from api.models.response import ResponseMsg
 from api.services.cached_data import sales_reports
 from api.services.cached_data import marketplaces
 from api.services.cached_data import list_prices
 from api.services.cached_data import item_types
-from api.models.cache import CachedDataUpdateStatus
+from api.models.cache import UpdateStatusOut
 
 router = APIRouter(prefix="/api/dev/cache", tags=["Developer > Cache"])
 
-@router.get("/status", response_model=CachedDataUpdateStatus)
+@router.get("/status", response_model=List[UpdateStatusOut])
 def get_all_update_statuses():
-  return CachedDataUpdateStatus(
-    sales_reports=sales_reports.get_sales_reports_update_status(),
-    marketplaces=marketplaces.get_marketplaces_update_status(),
-    list_prices=list_prices.get_list_price_update_status(),
-    item_types=item_types.get_item_types_update_status(),
-  )
+  return [
+    UpdateStatusOut(**sales_reports.get_sales_reports_update_status().model_dump(), name="sales_reports"),
+    UpdateStatusOut(**marketplaces.get_marketplaces_update_status().model_dump(), name="marketplaces"),
+    UpdateStatusOut(**list_prices.get_list_price_update_status().model_dump(), name="list_prices"), 
+    UpdateStatusOut(**item_types.get_item_types_update_status().model_dump(), name="item_types"),
+  ]
 
 @router.get("/sales-reports/update", response_model=ResponseMsg)
 async def update_sales_reports(background_tasks: BackgroundTasks):

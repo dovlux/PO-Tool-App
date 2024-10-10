@@ -5,8 +5,5 @@ class UpdateStatus(BaseModel):
   update_time: datetime
   status: str
 
-class CachedDataUpdateStatus(BaseModel):
-  sales_reports: UpdateStatus
-  marketplaces: UpdateStatus
-  list_prices: UpdateStatus
-  item_types: UpdateStatus
+class UpdateStatusOut(UpdateStatus):
+  name: str

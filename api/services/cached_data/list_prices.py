@@ -11,7 +11,7 @@ from api.models.sheets import ListPricesProperties
 skus_to_list_prices: Dict[str, Dict[str, Any]] = {"skus": {}}
 
 list_price_update_status = UpdateStatus(
-  update_time=datetime.now(),
+  update_time=datetime(year=1899, month=1, day=1),
   status="Pending Initial Update",
 )
 

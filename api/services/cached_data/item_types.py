@@ -11,7 +11,7 @@ from api.models.sheets import ItemTypesProperties, RowDicts
 item_types_rows: Dict[str, RowDicts] = {"item_types": RowDicts(row_dicts=[])}
 
 item_types_update_status = UpdateStatus(
-  update_time=datetime.now(),
+  update_time=datetime(year=1899, month=1, day=1),
   status="Pending Initial Update",
 )
 

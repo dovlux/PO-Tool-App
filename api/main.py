@@ -1,9 +1,9 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
 
 from firebase_admin import credentials, initialize_app # type: ignore
-
 cred = credentials.Certificate("google-firebase-adminsdk.json")
 initialize_app(credential=cred)
 
@@ -37,6 +37,14 @@ async def lifespan(app: FastAPI):
     pass
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=["http://localhost:3000"],
+  allow_credentials=True,
+  allow_methods=["*"],
+  allow_headers=["*"],
+)
 
 app.include_router(cache_router)
 app.include_router(po_router)
