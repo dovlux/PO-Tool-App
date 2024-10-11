@@ -48,6 +48,7 @@ async def update_marketplaces(repeat: bool, retries: int = 3):
   once a day. (Can be called manually as well)
   """
   valid_marketplace_groups: List[str] = ["Ecom", "Retail", "Wholesale", "Scarce"]
+  marketplaces_update_status.status = "Updating..."
 
   while True:
     attempt: int = 0

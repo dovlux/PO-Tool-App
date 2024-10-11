@@ -47,6 +47,8 @@ async def update_item_types(repeat: bool, retries: int = 3):
   This function will be called on application startup to update the Item Types
   once a day. (Can be called manually as well)
   """
+  item_types_update_status.status = "Updating..."
+  
   while True:
     attempt: int = 0
 

@@ -52,6 +52,7 @@ async def update_sales_reports(repeat: bool, retries: int = 3):
   """
   months_span: int = 6
   sales_reports_root_folder_id: str = "1YVeKul5kUUb4hr-bI8M20h2D94JM2W5w"
+  sales_reports_update_status.status = "Updating..."
 
   while True:
     attempt: int = 0

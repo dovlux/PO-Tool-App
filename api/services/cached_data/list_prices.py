@@ -47,6 +47,8 @@ async def update_list_prices(repeat: bool, retries: int = 3):
   This function will be called on application startup to update the List Prices
   once a day. (Can be called manually as well)
   """
+  list_price_update_status.status = "Updating..."
+
   while True:
     attempt: int = 0
 
