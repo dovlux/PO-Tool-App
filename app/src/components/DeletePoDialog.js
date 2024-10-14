@@ -1,0 +1,70 @@
+import React, { Fragment, useState } from "react";
+import {
+  Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
+  CircularProgress,
+} from '@mui/material';
+import sendRequest from '../utils/sendRequest'
+import { useAllContext } from "./Context";
+
+export default function DeletePoDialog({ buttonLoading, setButtonLoading, id }) {
+  const [open, setOpen] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
+  const { addSnackbar, fetchPos } = useAllContext();
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    if (!loadingDelete) {
+      setOpen(false);
+    }
+  };
+
+  const deletePurchaseOrder = async (id) => {
+    handleClose();
+    setButtonLoading(true);
+    setLoadingDelete(true);
+    try {
+      let response = await sendRequest(`purchase-orders/${id}`, null, 'DELETE');
+      fetchPos();
+      addSnackbar(response.message);
+    } catch (error) {
+      addSnackbar(error.message, false);
+    } finally {
+      setButtonLoading(false);
+      setLoadingDelete(false);
+    }
+  }
+
+  return (
+    <Fragment>
+      <Button
+        variant="contained"
+        color="error"
+        disabled={buttonLoading}
+        onClick={handleOpen}
+      >
+        {loadingDelete ? <CircularProgress size={24} /> : 'Delete'}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        disableEscapeKeyDown={loadingDelete}
+      >
+        <DialogTitle>Delete PO Draft</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this PO? This action is irreversible!
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} disabled={loadingDelete}>Cancel</Button>
+          <Button onClick={() => deletePurchaseOrder(id)} disabled={loadingDelete}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Fragment>
+  )
+}
