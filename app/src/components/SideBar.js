@@ -10,15 +10,13 @@ const mainMenuItems = [
   { text: 'Purchase Orders', page: 'purchase-orders' },
 ];
 
-const bottomMenuItems = (roles) => {
-  return [
-    ...(roles.includes("admin") ? [{ text: 'Settings', page: 'settings' }] : []),
-    { text: 'Instructions', page: 'instructions' },
-    ...(roles.includes("developer") ? [{ text: 'Developer Settings', page: 'developer' }] : []),
-  ]
-};
+const bottomMenuItems = [
+  { text: 'Settings', page: 'settings' },
+  { text: 'Instructions', page: 'instructions' },
+  { text: 'Developer Settings', page: 'developer' },
+]
 
-const MenuContent = ( { roles, closeDrawer }) => {
+const MenuContent = ( { closeDrawer }) => {
   return (
     <Stack sx={{ flexGrow: 1, pt: 1, flexDirection: 'column', justifyContent: 'space-between' }}>
       <List dense>
@@ -32,7 +30,7 @@ const MenuContent = ( { roles, closeDrawer }) => {
       </List>
 
       <List dense>
-        {bottomMenuItems(roles).map((item, index) => (
+        {bottomMenuItems.map((item, index) => (
           <ListItem key={index} disablePadding sx={{ display: 'block' }}>
             <ListItemButton component={Link} to={item.page} onClick={closeDrawer}>
               <ListItemText primary={item.text} />
@@ -71,7 +69,7 @@ export default function SideBar({ roles }) {
       </IconButton>
       <Drawer open={open} onClose={closeDrawer}>
         <Toolbar />
-        <MenuContent roles={roles} closeDrawer={closeDrawer}/>
+        <MenuContent closeDrawer={closeDrawer}/>
       </Drawer>
     </Fragment>
   )

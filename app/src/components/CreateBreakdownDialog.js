@@ -4,12 +4,10 @@ import {
   CircularProgress,
 } from '@mui/material';
 import sendRequest from '../utils/sendRequest'
-import { useAllContext } from "./Context";
 
-export default function CreateBreakdownDialog({ buttonLoading, setButtonLoading, id }) {
+export default function CreateBreakdownDialog({ buttonLoading, setButtonLoading, id, addSnackbar, fetchPos }) {
   const [open, setOpen] = useState(false);
   const [loadingBreakdown, setLoadingBreakdown] = useState(false);
-  const { addSnackbar, fetchPos } = useAllContext();
 
   const handleOpen = () => {
     setOpen(true);
@@ -26,7 +24,7 @@ export default function CreateBreakdownDialog({ buttonLoading, setButtonLoading,
     setButtonLoading(true);
     setLoadingBreakdown(true);
     try {
-      let response = await sendRequest(`purchase-orders/${id}/submit-for-breakdown`, null, 'POST');
+      let response = await sendRequest(`purchase-orders/${id}/create-breakdown`);
       fetchPos();
       addSnackbar(response.message);
     } catch (error) {

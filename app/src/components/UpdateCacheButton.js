@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Button, CircularProgress, Stack } from "@mui/material";
 import sendRequest from "../utils/sendRequest";
-import { useAllContext } from "./Context";
 
-export default function UpdateCacheButton({ row }) {
+export default function UpdateCacheButton({ row, fetchCacheStatus, addSnackbar }) {
   const [updatingCache, setUpdatingCache] = useState(false);
-  const { fetchCacheStatus, addSnackbar } = useAllContext();
 
   const updateCache = async (name) => {
     setUpdatingCache(true);

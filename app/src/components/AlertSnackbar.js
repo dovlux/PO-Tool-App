@@ -1,10 +1,7 @@
 import React from "react";
 import { Snackbar, Alert } from '@mui/material';
-import { useAllContext } from "./Context";
 
-export default function AlertSnackbar() {
-  const { snackbars, setSnackbars } = useAllContext();
-
+export default function AlertSnackbar({ snackbars, setSnackbars }) {
   const handleClose = (id, reason) => {
     if (reason === 'clickaway') return;
     setSnackbars((prev) => prev.filter((snackbar) => snackbar.id !== id));

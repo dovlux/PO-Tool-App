@@ -1,5 +1,6 @@
 from typing import List, Any
 from pydantic import BaseModel
+from fastapi import HTTPException
 
 from api.models.sheets import WorksheetProperties, ValidationProperties, SheetValues
 from api.models.purchase_orders import UpdatePurchaseOrder
@@ -24,9 +25,19 @@ async def validate_worksheet_for_breakdown(po_id: int) -> SheetValues | None:
       raise Exception("Could not find spreadsheet associated with this purchase order.")
 
     # Retrieve values from the worksheet.
-    worksheet_values = await sheets_utils.get_row_dicts_from_spreadsheet(
-      ss_properties=WorksheetProperties(id=worksheet_id)
-    )
+    try:
+      worksheet_values = await sheets_utils.get_row_dicts_from_spreadsheet(
+        ss_properties=WorksheetProperties(id=worksheet_id)
+      )
+    except HTTPException as e:
+      if e.detail == "Sheet has no cell values in non-header rows.":
+        update_purchase_order(
+          id=po_id, updates=UpdatePurchaseOrder(status="Errors in worksheet (Breakdown)")
+        )
+        return
+      else:
+        raise
+
     worksheet_row_dicts = worksheet_values.row_dicts
 
     validation_data = await get_validation_data(worksheet_id=worksheet_id)
@@ -48,13 +59,16 @@ async def validate_worksheet_for_breakdown(po_id: int) -> SheetValues | None:
         error_msgs.append("Invalid Type")
       else:
         item_types_rows = get_updated_item_types_rows()
-        valid_item_type = next(
-          (True for item_row in item_types_rows.row_dicts
-          if item_row["ProductTypeName"] == item_row),
+        item_type_data = next(
+          (item_row for item_row in item_types_rows.row_dicts
+          if item_row["ProductTypeName"] == item_type),
           None
         )
-        if valid_item_type is None:
+        if item_type_data is None:
           error_msgs.append("Unknown Type")
+        else:
+          row["Category"] = item_type_data.get("Reporting Category", "")
+          row["Gender"] = item_type_data.get("Gender", "")
 
       # validate retail, unit cost, and qty
       for column in ["Retail", "Unit Cost", "Qty"]:
@@ -70,10 +84,11 @@ async def validate_worksheet_for_breakdown(po_id: int) -> SheetValues | None:
       grade: str = row["Grade"]
       if not grade:
         error_msgs.append("Invalid Grade")
+        
+      row["Errors"] = ". ".join(error_msgs)
 
       if error_msgs:
         has_errors = True
-        row["Errors"] = ". ".join(error_msgs)
 
     if has_errors:
       await sheets_utils.post_row_dicts_to_spreadsheet(

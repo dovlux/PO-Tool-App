@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Stack, Typography, Box, IconButton } from '@mui/material';
 import DataTable from '../components/DataTable';
 import CreatePoDialog from '../components/CreatePoDialog';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { useAllContext } from '../components/Context';
+import sendRequest from '../utils/sendRequest';
+import { ReactComponent as GoogleSheetsIcon } from '../icons/google-sheets-icon.svg';
+import RowButtons from "../components/RowButtons";
 
-const PoHeader = ({ roles, fetchPos }) => {
+const PoHeader = ({ fetchPos, addSnackbar }) => {
   return (
     <Stack
       direction='row'
@@ -22,13 +24,11 @@ const PoHeader = ({ roles, fetchPos }) => {
         Purchase Orders
       </Typography>
       <Stack direction='row' sx={{ gap: 1 }}>
-        {(roles.includes("buyer") || roles.includes("admin")) && (
-          <CreatePoDialog />
-        )}
+        <CreatePoDialog addSnackbar={addSnackbar} fetchPos={fetchPos} />
         <IconButton
           color="inherit"
           aria-label="refresh table"
-          onClick={fetchPos(false)}
+          onClick={() => fetchPos(false)}
         >
           <RefreshIcon />
         </IconButton>
@@ -37,12 +37,70 @@ const PoHeader = ({ roles, fetchPos }) => {
   )
 }
 
-const PurchaseOrders = () => {
-  const { roles, poRows, poColumns, fetchPos } = useAllContext();
+const PurchaseOrders = ({ addSnackbar, setLoading }) => {
+  const [poRows, setPoRows] = useState([]);
+  const poColumns = [
+    { field: 'id', type: 'number', headerName: 'ID', width: 70, sortable: true },
+    { field: 'is_ats', headerName: 'Type', width: 70, valueGetter: (value) => value ? "ATS" : "LUX" },
+    { field: 'name', headerName: 'Name', width: 200 },
+    { field: 'date_created', type: 'date', headerName: 'Date Created', width: 150,
+      valueGetter: (value) => new Date(JSON.parse(value)),
+    },
+    { field: 'status', headerName: 'Status', width: 300},
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 300,
+      sortable: false,
+      headerAlign: 'center',
+      renderCell: (params) => <RowButtons row={params.row} addSnackbar={addSnackbar} fetchPos={fetchPos} />
+    },
+    { field: 'spreadsheet_id', headerName: '', width: 70, sortable: false, renderCell: (params) => {
+        if (!params.value) {
+          return null;
+        }
+        return (
+          <IconButton
+            component="a"
+            href={'https://docs.google.com/spreadsheets/d/' + params.value}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="open google sheet"
+          >
+            <GoogleSheetsIcon style={{ height: '24px', width: '24px' }} />
+          </IconButton>
+        );
+      }
+    }
+  ];
+
+  const getPurchaseOrders = async () => {
+    let data = await sendRequest('purchase-orders');
+    let rows = data;
+    return rows
+  };
+
+  const fetchPos = useCallback(async (background = false) => {
+    if (!background) setLoading(true);
+    try {
+      let poRows = await getPurchaseOrders();
+      setPoRows(poRows);
+    } catch (error) {
+      if (!background) addSnackbar(error.message);
+    } finally {
+      if (!background) setLoading(false);
+    }
+  }, [addSnackbar, setLoading]);
+
+  useEffect(() => {
+    fetchPos();
+    const intervalId = setInterval(() => fetchPos(true), 15000);
+    return () => clearInterval(intervalId);
+  }, [fetchPos]);
 
   return (
     <Box>
-      <PoHeader roles={roles} fetchPos={fetchPos} />
+      <PoHeader fetchPos={fetchPos} addSnackbar={addSnackbar} />
       <DataTable rows={poRows} columns={poColumns} />
     </Box>
   )

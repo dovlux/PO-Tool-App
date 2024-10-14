@@ -4,12 +4,10 @@ import {
   CircularProgress,
 } from '@mui/material';
 import sendRequest from '../utils/sendRequest'
-import { useAllContext } from "./Context";
 
-export default function DeletePoDialog({ buttonLoading, setButtonLoading, id }) {
+export default function DeletePoDialog({ buttonLoading, setButtonLoading, id, addSnackbar, fetchPos }) {
   const [open, setOpen] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
-  const { addSnackbar, fetchPos } = useAllContext();
 
   const handleOpen = () => {
     setOpen(true);

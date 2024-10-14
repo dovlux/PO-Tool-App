@@ -4,13 +4,11 @@ import {
   CircularProgress, FormControlLabel, Checkbox,
 } from '@mui/material';
 import sendRequest from '../utils/sendRequest'
-import { useAllContext } from "./Context";
 
-export default function CreatePoDialog() {
+export default function CreatePoDialog({ addSnackbar, fetchPos }) {
   const [open, setOpen] = useState(false);
   const [loadingCreate, setLoadingCreate] = useState(false);
   const [isAts, setIsAts] = useState(false);
-  const { addSnackbar, fetchPos } = useAllContext();
 
   const handleOpen = () => {
     setOpen(true);

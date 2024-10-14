@@ -49,3 +49,14 @@ class WorksheetProperties(SheetProperties):
 class ValidationProperties(SheetProperties):
   sheet_name: str = "Validation"
   required_headers: List[str] = ["Brand", "General Types", "ProductTypeName"]
+
+class RelevantSalesProperties(SheetProperties):
+  sheet_name: str = "Relevant Sales"
+  required_headers: List[str] = [
+    "Transaction Date", "Trans Type", "Order #", "Order Date", "Ship Date",
+    "Marketplace", "Channel Order #", "SKU", "Qty", "Tax", "Discount", "Grand Total",
+    "Accrual Refund", "Payments", "Refunds", "Adjustments",
+    "Grand Total + Adjustmensts - Tax + Accrual Refunds", "Items Cost", "Shipping Cost",
+    "Commission", "Profit", "Brand", "ProductName", "ProductTypeName", "Type", "Gender",
+    "Age Since Received", "Vendor", "Sales Rep"
+  ]
