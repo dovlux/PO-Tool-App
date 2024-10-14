@@ -13,6 +13,7 @@ from api.services.cached_data.list_prices import update_list_prices
 from api.services.cached_data.item_types import update_item_types
 from api.routers.cache import router as cache_router
 from api.routers.purchase_orders import router as po_router
+from api.routers.po_actions import router as po_actions_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,3 +49,4 @@ app.add_middleware(
 
 app.include_router(cache_router)
 app.include_router(po_router)
+app.include_router(po_actions_router)

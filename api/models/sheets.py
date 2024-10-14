@@ -6,6 +6,7 @@ class RowDicts(BaseModel):
 
 class SheetValues(RowDicts):
   headers: List[str]
+  spreadsheet_id: str
 
 class SheetProperties(BaseModel):
   id: str
@@ -37,3 +38,14 @@ class ItemTypesProperties(SheetProperties):
   id: str = "1_sqV63i2p9bzDO-XieUmr8FSapbkxcoLIcd5Ybsl5Fs"
   sheet_name: str = "Item Types"
   required_headers: List[str] = ["ProductTypeName", "Gender", "Reporting Category"]
+
+class WorksheetProperties(SheetProperties):
+  sheet_name: str = "Worksheet"
+  required_headers: List[str] = [
+    "Brand", "Description", "Item Type", "Color", "Size", "MPN", "Retail", "Unit Cost",
+    "Qty", "Grade", "Weighted Cost", "Errors", "Group", "ProductID", "LightSpeed Url",
+  ]
+
+class ValidationProperties(SheetProperties):
+  sheet_name: str = "Validation"
+  required_headers: List[str] = ["Brand", "General Types", "ProductTypeName"]

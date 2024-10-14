@@ -78,7 +78,7 @@ async def get_row_dicts_from_spreadsheet(ss_properties: SheetProperties) -> Shee
 
   # Return actual header row and row dicts
   print("Validated and Converted all non-header rows into dicts.")
-  return SheetValues(headers=all_row_values[0], row_dicts=row_dicts)
+  return SheetValues(headers=all_row_values[0], row_dicts=row_dicts, spreadsheet_id=spreadsheet_id)
 
 async def get_row_dicts_from_excel_sheet(file_properties: SheetProperties) -> SheetValues:
   """
@@ -132,7 +132,7 @@ async def get_row_dicts_from_excel_sheet(file_properties: SheetProperties) -> Sh
 
   # Return actual header row and row dicts
   print("Validated and Converted all non-header rows into dicts.")
-  return SheetValues(headers=actual_headers, row_dicts=row_dicts)
+  return SheetValues(headers=actual_headers, row_dicts=row_dicts, spreadsheet_id=file_id)
 
 def validate_required_headers_(
   actual_headers: List[str],
