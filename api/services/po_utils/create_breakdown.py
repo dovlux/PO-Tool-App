@@ -61,6 +61,12 @@ async def create_breakdown(po_id: int) -> None:
       row_dicts=worksheet_values.row_dicts,
     )
 
+    update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Breakdown created"))
+
+    add_log_to_purchase_order(
+      id=po_id, log=Log(user="Internal", message="Breakdown Created.", type="log")
+    )
+
   except Exception as e:
     update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Internal Error"))
     

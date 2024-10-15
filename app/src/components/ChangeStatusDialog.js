@@ -31,7 +31,7 @@ export default function ChangeStatusDialog({ row, addSnackbar, fetchPos }) {
       fetchPos();
       addSnackbar(response.message);
     } catch (error) {
-      addSnackbar(error.message, true);
+      addSnackbar(error.message, false);
     } finally {
       setLoadingChange(false);
       handleClose();
