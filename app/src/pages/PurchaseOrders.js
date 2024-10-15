@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Stack, Typography, Box, IconButton } from '@mui/material';
 import DataTable from '../components/DataTable';
 import CreatePoDialog from '../components/CreatePoDialog';
@@ -40,7 +40,20 @@ const PoHeader = ({ fetchPos, addSnackbar }) => {
 
 const PurchaseOrders = ({ addSnackbar, setLoading }) => {
   const [poRows, setPoRows] = useState([]);
-  const poColumns = [
+
+  const fetchPos = useCallback(async (background = false) => {
+    if (!background) setLoading(true);
+    try {
+      let poRows = await getPurchaseOrders();
+      setPoRows(poRows);
+    } catch (error) {
+      if (!background) addSnackbar(error.message);
+    } finally {
+      if (!background) setLoading(false);
+    }
+  }, [addSnackbar, setLoading]);
+
+  const poColumns = useMemo(() => [
     { field: 'id', type: 'number', headerName: 'ID', width: 70, sortable: true },
     { field: 'is_ats', headerName: 'Type', width: 70, valueGetter: (value) => value ? "ATS" : "LUX" },
     { field: 'name', headerName: 'Name', width: 200 },
@@ -85,25 +98,13 @@ const PurchaseOrders = ({ addSnackbar, setLoading }) => {
         );
       }
     }
-  ];
+  ], [addSnackbar, fetchPos]);
 
   const getPurchaseOrders = async () => {
     let data = await sendRequest('purchase-orders');
     let rows = data;
     return rows
   };
-
-  const fetchPos = useCallback(async (background = false) => {
-    if (!background) setLoading(true);
-    try {
-      let poRows = await getPurchaseOrders();
-      setPoRows(poRows);
-    } catch (error) {
-      if (!background) addSnackbar(error.message);
-    } finally {
-      if (!background) setLoading(false);
-    }
-  }, [addSnackbar, setLoading]);
 
   useEffect(() => {
     fetchPos();

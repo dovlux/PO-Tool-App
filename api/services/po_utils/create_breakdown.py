@@ -1,9 +1,10 @@
 from fastapi import HTTPException, status
+from typing import Dict, Any
 
 from api.services.po_utils.breakdown_validation import validate_worksheet_for_breakdown
 from api.services.cached_data.sales_reports import get_updated_sales_reports_rows
 from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_order, get_purchase_order
-from api.models.sheets import RelevantSalesProperties, WorksheetProperties
+from api.models.sheets import RelevantSalesProperties, WorksheetProperties, RowDicts, BreakdownProperties
 from api.services.google_api import sheets_utils
 from api.models.purchase_orders import UpdatePurchaseOrder, Log
 
@@ -29,6 +30,7 @@ async def create_breakdown(po_id: int) -> None:
     
     groups: set[str] = set()
     brand_gender_types: set[str] = set()
+    group_to_brand_gender_type: dict[str, str] = {}
 
     # Get brand_gender_type, group, total cost, and total msrp for each row
     for row in worksheet_values.row_dicts:
@@ -39,6 +41,8 @@ async def create_breakdown(po_id: int) -> None:
       group: str = f"{row['Brand']} {row['Item Type']} {row['Grade']}"
       groups.add(group)
       row["Group"] = group
+
+      group_to_brand_gender_type[group] = brand_gender_type
 
       row["Total Cost"] = float(row["Unit Cost"]) * int(row["Qty"])
       row["Total Msrp"] = float(row["Retail"]) * int(row["Qty"])
@@ -51,11 +55,104 @@ async def create_breakdown(po_id: int) -> None:
       and sales_row['Marketplace']
     ]
 
+    marketplace_groups = ["Ecom", "Retail", "Wholesale", "Scarce"]
+
+    # Get sales and msrp data by marketplace for each brand-gender-type
+    brand_gender_type_data = {
+      brand_gndr_type: {
+        "totals": { "total_sales": 0.0 },
+        **{
+          marketplace: { "total_sales": 0.0, "total_msrp": 0.0 }
+          for marketplace in marketplace_groups
+        }
+      } for brand_gndr_type in brand_gender_types
+    }
+
+    # Add sales data from each sales row to brand-gender-type-data
+    for row in relevant_sales_rows:
+      sales = row["Grand Total + Adjustmensts - Tax + Accrual Refunds"]
+      msrp = row["MSRP"]
+      marketplace = row["Marketplace"]
+
+      entry_to_update = brand_gender_type_data[row["Brand Gender Category"]]
+      entry_to_update["totals"]["total_sales"] += sales
+      entry_to_update[marketplace]["total_sales"] += sales
+      entry_to_update[marketplace]["total_msrp"] += msrp
+
+    # Calculate Discount, Market Share, and Profit-to-Msrp for each marketplace
+    for brand_gndr_type in brand_gender_types:
+      sales_data = brand_gender_type_data[brand_gndr_type]
+      total_sales = sales_data["totals"]["total_sales"]
+      market_share = 0.0
+
+      for marketplace in marketplace_groups:
+        marketplace_data = sales_data[marketplace]
+        sales = marketplace_data["total_sales"]
+        msrp = marketplace_data["total_msrp"]
+
+        if not total_sales:
+          marketplace_data["market_share"] = 0.25
+        else:
+          marketplace_data["market_share"] = 0 if not sales else round(sales / total_sales, 2)
+        market_share += marketplace_data["market_share"]
+        marketplace_data["discount"] = round(1 - (0 if not sales else sales / msrp), 2)
+
+      # Ensure sum of market share equals 1
+      if market_share != 1:
+        remainder = 1 - market_share
+        marketplace_with_highest_share = max(
+          sales_data, key=lambda k: sales_data[k]["market_share"]
+        )
+        sales_data[marketplace_with_highest_share]["market_share"] += remainder
+
+    # Initialize list of row_dicts for Breakdown sheet
+    breakdown_row_dicts = RowDicts(row_dicts=[])
+
+    # Add data for each product group to breakdown-row-dicts
+    for group in groups:
+      brand_gender_type = group_to_brand_gender_type[group]
+
+      total_cost = sum(
+        (row["Total Cost"] for row in worksheet_values.row_dicts
+        if row["Group"] == group), 0.0
+      )
+
+      total_msrp = sum(
+        (row["Total Msrp"] for row in worksheet_values.row_dicts
+        if row["Group"] == group), 0.0
+      )
+
+      row_dict: Dict[str, Any] = {
+        "Product Group": group,
+        "Total Cost": total_cost,
+        "Total Msrp": total_msrp,
+      }
+
+      # Add marketplace data to row-dict
+      for marketplace in marketplace_groups:
+        market_data = brand_gender_type_data[brand_gender_type][marketplace]
+        row_dict[f"{group} Start Discount"] = market_data["discount"]
+        row_dict[f"{group} Sales %"] = market_data["market_share"]
+
+      # Add compiled row-dict to breakdown-row-dicts
+      breakdown_row_dicts.row_dicts.append(row_dict)
+
+    # Sort breakdown rows based on Group names
+    sorted_row_dicts = sorted(breakdown_row_dicts.row_dicts, key=lambda x: x["Product Group"])
+
+    # Post Breakdown to breakdown sheet
+    await sheets_utils.post_row_dicts_to_spreadsheet(
+      ss_properties=BreakdownProperties(id=worksheet_values.spreadsheet_id),
+      row_dicts=sorted_row_dicts,
+    )
+
+    # Post relevant sales to relevant sales sheet
     await sheets_utils.post_row_dicts_to_spreadsheet(
       ss_properties=RelevantSalesProperties(id=worksheet_values.spreadsheet_id),
       row_dicts=relevant_sales_rows,
     )
 
+    # Post updated worksheet to worksheet
     await sheets_utils.post_row_dicts_to_spreadsheet(
       ss_properties=WorksheetProperties(id=worksheet_values.spreadsheet_id),
       row_dicts=worksheet_values.row_dicts,

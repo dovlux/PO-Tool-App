@@ -60,3 +60,13 @@ class RelevantSalesProperties(SheetProperties):
     "Commission", "Profit", "Brand", "ProductName", "ProductTypeName", "Type", "Gender",
     "Age Since Received", "Vendor", "Sales Rep", "Brand Gender Category", "MSRP",
   ]
+
+class BreakdownProperties(SheetProperties):
+  sheet_name: str = "Breakdown"
+  required_headers: List[str] = [
+    "Product Group", "Total Cost", "Total MSRP", "Ecom Start Discount", "Ecom Sales %",
+    "Retail Start Discount", "Retail Sales %", "Wholesale Start Discount", "Wholesale Sales %",
+    "Scarce Start Discount", "Scarce Sales %", "Confidence", "Sell-through", "Projected Sales",
+    "Projected Fees", "Projected Net Sales", "Holding Cost", "Monthly ROI", "Weighted Cost",
+    "New Discount", "Total Projected Profit", "Errors",
+  ]
