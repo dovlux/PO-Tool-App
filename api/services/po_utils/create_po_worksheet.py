@@ -1,11 +1,15 @@
 from fastapi import HTTPException
 
 from api.services.utils.send_emails import send_error_email
-from api.crud.purchase_orders import update_purchase_order
+from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_order
 from api.services.google_api import drive as drive_services
 from api.models import purchase_orders as po_models
 
-async def create_po_worksheet(po: po_models.PurchaseOrderOut, retries: int = 3) -> None:
+async def create_po_worksheet(po: po_models.PurchaseOrderOut, retries: int = 5) -> None:
+  add_log_to_purchase_order(
+    id=po.id, log=po_models.Log(user="Internal", message="Creating worksheet.", type="log")
+  )
+
   attempt: int = 0
 
   new_worksheet_properties = po_models.NewPurchaseOrderNonAts(new_file_name=po.name)
@@ -27,11 +31,19 @@ async def create_po_worksheet(po: po_models.PurchaseOrderOut, retries: int = 3) 
         status="Worksheet Created", spreadsheet_id=new_worksheet_id,
       ))
 
+      add_log_to_purchase_order(
+        id=po.id, log=po_models.Log(user="Internal", message="Worksheet created.", type="log")
+      )
+
       return
     
     except HTTPException as e:
       attempt += 1
       if attempt == retries:
+        add_log_to_purchase_order(
+          id=po.id, log=po_models.Log(user="Internal", message=e.detail, type="error")
+        )
+
         await send_error_email(
           subject="PO Tool Creating PO Worksheet Error", error_message=e.detail
         )
@@ -39,6 +51,11 @@ async def create_po_worksheet(po: po_models.PurchaseOrderOut, retries: int = 3) 
         return
 
     except Exception as e:
+      if attempt == retries:
+        add_log_to_purchase_order(
+          id=po.id, log=po_models.Log(user="Internal", message=str(e), type="error")
+        )
+
       await send_error_email(
         subject="PO Tool Creating PO Worksheet Unspecified Error", error_message=str(e)
       )

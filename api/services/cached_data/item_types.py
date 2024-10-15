@@ -42,7 +42,7 @@ def get_updated_item_types_rows() -> RowDicts:
 def get_item_types_update_status() -> UpdateStatus:
   return item_types_update_status
 
-async def update_item_types(repeat: bool, retries: int = 3):
+async def update_item_types(repeat: bool, retries: int = 5):
   """
   This function will be called on application startup to update the Item Types
   once a day. (Can be called manually as well)
@@ -52,7 +52,7 @@ async def update_item_types(repeat: bool, retries: int = 3):
   while True:
     attempt: int = 0
 
-    while attempt <= retries:
+    while attempt < retries:
       try:
         print("Updating Item Types...")
 

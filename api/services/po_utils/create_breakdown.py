@@ -1,14 +1,18 @@
 from api.services.po_utils.breakdown_validation import validate_worksheet_for_breakdown
 from api.services.cached_data.sales_reports import get_updated_sales_reports_rows
-from api.crud.purchase_orders import update_purchase_order
+from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_order
 from api.models.sheets import RelevantSalesProperties, WorksheetProperties
 from api.services.google_api import sheets_utils
-from api.models.purchase_orders import UpdatePurchaseOrder
+from api.models.purchase_orders import UpdatePurchaseOrder, Log
 
 async def create_breakdown(po_id: int) -> None:
   worksheet_values = await validate_worksheet_for_breakdown(po_id=po_id)
   if worksheet_values is None:
     return
+  
+  add_log_to_purchase_order(
+    id=po_id, log=Log(user="Internal", message="Creating breakdown.", type="log")
+  )
   
   try:
     sales_reports_rows = get_updated_sales_reports_rows().row_dicts
@@ -49,4 +53,7 @@ async def create_breakdown(po_id: int) -> None:
 
   except Exception as e:
     update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Internal Error"))
-    print(str(e))
+    
+    add_log_to_purchase_order(
+      id=po_id, log=Log(user="Internal", message=str(e), type="error")
+    )

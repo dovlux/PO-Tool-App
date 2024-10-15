@@ -42,7 +42,7 @@ def get_updated_marketplaces_to_groups() -> Dict[str, str]:
 def get_marketplaces_update_status() -> UpdateStatus:
   return marketplaces_update_status
 
-async def update_marketplaces(repeat: bool, retries: int = 3):
+async def update_marketplaces(repeat: bool, retries: int = 5):
   """
   This function will be called on application startup to update the marketplaces
   once a day. (Can be called manually as well)
@@ -53,7 +53,7 @@ async def update_marketplaces(repeat: bool, retries: int = 3):
   while True:
     attempt: int = 0
 
-    while attempt <= retries:
+    while attempt < retries:
       try:
         print("Updating marketplaces...")
 

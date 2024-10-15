@@ -3,8 +3,8 @@ from pydantic import BaseModel
 from fastapi import HTTPException
 
 from api.models.sheets import WorksheetProperties, ValidationProperties, SheetValues
-from api.models.purchase_orders import UpdatePurchaseOrder
-from api.crud.purchase_orders import get_purchase_order, update_purchase_order
+from api.models.purchase_orders import UpdatePurchaseOrder, Log
+from api.crud.purchase_orders import get_purchase_order, update_purchase_order, add_log_to_purchase_order
 from api.services.google_api import sheets_utils
 from api.services.cached_data.item_types import get_updated_item_types_rows
 
@@ -16,6 +16,10 @@ async def validate_worksheet_for_breakdown(po_id: int) -> SheetValues | None:
   """
   This function validates all user input in the PO Worksheet for breakdown
   """
+  add_log_to_purchase_order(
+    id=po_id, log=Log(user="Internal", message="Validating worksheet contents.", type="log")
+  )
+
   try:
     # Retrieve purchase order data and get the spreadsheet id of the worksheet.
     purchase_order = get_purchase_order(id=po_id)
@@ -34,6 +38,13 @@ async def validate_worksheet_for_breakdown(po_id: int) -> SheetValues | None:
         update_purchase_order(
           id=po_id, updates=UpdatePurchaseOrder(status="Errors in worksheet (Breakdown)")
         )
+
+        add_log_to_purchase_order(
+          id=po_id, log=Log(
+            user="Internal", message="Worksheet is empty.", type="error"
+          )
+        )
+        
         return
       else:
         raise
@@ -99,11 +110,24 @@ async def validate_worksheet_for_breakdown(po_id: int) -> SheetValues | None:
       update_purchase_order(
         id=po_id, updates=UpdatePurchaseOrder(status="Errors in worksheet (Breakdown)")
       )
+
+      add_log_to_purchase_order(
+        id=po_id, log=Log(user="Internal", message="Errors found and posted to worksheet.", type="error")
+      )
+
     else:
+      add_log_to_purchase_order(
+        id=po_id, log=Log(user="Internal", message="Worksheet content validated", type="log")
+      )
+
       return worksheet_values
     
-  except:
+  except Exception as e:
     update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Internal Error"))
+
+    add_log_to_purchase_order(
+      id=po_id, log=Log(user="Internal", message=str(e), type="error")
+    )
 
 async def get_validation_data(worksheet_id: str) -> ValidationData:
   # Retrieve validation data from validation sheet in PO worksheet.

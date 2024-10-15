@@ -21,7 +21,37 @@ export default function DataTable({ rows, columns }) {
         }}
         pageSizeOptions={[50, 100]}
         disableRowSelectionOnClick
-        sx={{ height: '100%', width: '100%', }}
+        getRowClassName={(params) => {
+          switch (params.row.type) {
+            case 'error':
+              return 'error-row';
+            case 'log':
+              return 'log-row';
+            case 'user':
+              return 'user-row';
+            default:
+              return '';
+          }
+        }}
+        sx={{
+          height: '100%',
+          width: '100%',
+          "& .MuiDataGrid-cell:focus-within": {
+            outline: 'none !important'
+          },
+          ".MuiDataGrid-row.error-row": {
+            backgroundColor: 'red',
+            color: 'white',
+          },
+          ".MuiDataGrid-row.log-row": {
+            backgroundColor: 'grey',
+            color: 'white',
+          },
+          ".MuiDataGrid-row.user-row": {
+            backgroundColor: 'green',
+            color: 'white',
+          },
+        }}
       />
     </Box>
   );

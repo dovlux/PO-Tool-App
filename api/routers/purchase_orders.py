@@ -20,6 +20,7 @@ async def create_purchase_order(
     po=po_models.PurchaseOrderDB(
       name=po.name, is_ats=po.is_ats, date_created=json.dumps(current_time),
       status="Creating Worksheet",
+      logs=[po_models.Log(user="pending", message="Created PO.", type="user")]
     )
   )
 

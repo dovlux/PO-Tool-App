@@ -45,7 +45,7 @@ def get_updated_sales_reports_rows() -> RowDicts:
 def get_sales_reports_update_status() -> UpdateStatus:
   return sales_reports_update_status
 
-async def update_sales_reports(repeat: bool, retries: int = 3):
+async def update_sales_reports(repeat: bool, retries: int = 5):
   """
   This function will be called on application startup to update the sales reports
   once a day. (Can be called manually as well)
@@ -57,7 +57,7 @@ async def update_sales_reports(repeat: bool, retries: int = 3):
   while True:
     attempt: int = 0
 
-    while attempt <= retries:
+    while attempt < retries:
       try:
         print("Updating the sales reports...")
 

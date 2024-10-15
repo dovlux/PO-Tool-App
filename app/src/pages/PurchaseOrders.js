@@ -6,6 +6,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import sendRequest from '../utils/sendRequest';
 import { ReactComponent as GoogleSheetsIcon } from '../icons/google-sheets-icon.svg';
 import RowButtons from "../components/RowButtons";
+import ViewLogsDialog from '../components/ViewLogsDialog';
 
 const PoHeader = ({ fetchPos, addSnackbar }) => {
   return (
@@ -54,6 +55,14 @@ const PurchaseOrders = ({ addSnackbar, setLoading }) => {
       sortable: false,
       headerAlign: 'center',
       renderCell: (params) => <RowButtons row={params.row} addSnackbar={addSnackbar} fetchPos={fetchPos} />
+    },
+    {
+      field: 'logs',
+      headerName: 'Logs',
+      width: 150,
+      sortable: false,
+      headerAlign: 'center',
+      renderCell: (params) => <ViewLogsDialog row={params.row} />
     },
     { field: 'spreadsheet_id', headerName: '', width: 70, sortable: false, renderCell: (params) => {
         if (!params.value) {

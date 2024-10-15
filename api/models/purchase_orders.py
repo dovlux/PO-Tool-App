@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import List, Literal
+from datetime import datetime, timezone
 
 from api.models.drive import FileCopyData
 
@@ -6,9 +8,16 @@ class PurchaseOrderIn(BaseModel):
   name: str
   is_ats: bool
 
+class Log(BaseModel):
+  user: str
+  message: str
+  type: Literal["user", "log", "error"]
+  date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class PurchaseOrderDB(PurchaseOrderIn):
   date_created: str
   status: str
+  logs: List[Log]
   spreadsheet_id: str | None = None
 
 class PurchaseOrderOut(PurchaseOrderDB):
@@ -27,3 +36,6 @@ class NewPurchaseOrderAts(FileCopyData):
 class UpdatePurchaseOrder(BaseModel):
   status: str | None = None
   spreadsheet_id: str | None = None
+
+class UpdatePurchaseOrderLog(BaseModel):
+  logs: List[Log]
