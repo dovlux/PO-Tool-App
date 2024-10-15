@@ -76,6 +76,8 @@ async def update_sales_reports(repeat: bool, retries: int = 5):
         # Retrieve the latest list prices
         sku_to_list_price = list_prices.get_updated_skus_to_list_prices()
 
+        final_sales_rows: List[Dict[str, Any]] = []
+
         # Add list price data to sales rows
         for row in sales_rows.row_dicts:
           list_price = float(sku_to_list_price.get(row["SKU"], 0.0))
@@ -85,8 +87,10 @@ async def update_sales_reports(repeat: bool, retries: int = 5):
           row["Brand Gender Category"] = f"{str(row['Brand']).lower()} {row['Gender']} {row['Type']}"
           row["MSRP"] = int(row["Qty"]) * list_price
 
+          final_sales_rows.append(row)
+
         # Update the sales reports global variables
-        sales_reports_rows["row_dicts"] = sales_rows
+        sales_reports_rows["row_dicts"] = RowDicts(row_dicts=final_sales_rows)
         sales_reports_update_status.update_time = datetime.now()
         sales_reports_update_status.status = "Updated"
         print("Sales reports finished updating.")
