@@ -17,10 +17,10 @@ from api.routers.po_actions import router as po_actions_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-  sales_report_update_task = asyncio.create_task(update_sales_reports(repeat=True))
-  marketplaces_update_task = asyncio.create_task(update_marketplaces(repeat=True))
   list_prices_update_task = asyncio.create_task(update_list_prices(repeat=True))
+  marketplaces_update_task = asyncio.create_task(update_marketplaces(repeat=True))
   item_types_update_task = asyncio.create_task(update_item_types(repeat=True))
+  sales_report_update_task = asyncio.create_task(update_sales_reports(repeat=True))
 
   yield
 

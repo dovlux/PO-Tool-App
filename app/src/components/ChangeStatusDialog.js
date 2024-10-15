@@ -12,6 +12,7 @@ export default function ChangeStatusDialog({ row, addSnackbar, fetchPos }) {
   const [selectedStatus, setSelectedStatus] = useState('');
 
   const handleOpen = () => {
+    setSelectedStatus('');
     setOpen(true);
   };
 
@@ -65,6 +66,7 @@ export default function ChangeStatusDialog({ row, addSnackbar, fetchPos }) {
             <MenuItem value="">Select Status</MenuItem>
             <MenuItem value="Worksheet Created">Worksheet Created</MenuItem>
             <MenuItem value="Breakdown Created">Breakdown Created</MenuItem>
+            <MenuItem value="Internal Error">Internal Error</MenuItem>
           </Select>
         </DialogContent>
         <DialogActions>

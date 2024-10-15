@@ -9,6 +9,7 @@ from api.services.google_api import sheets_utils
 from api.services.utils.send_emails import send_error_email
 from api.models.sheets import RowDicts, SalesReportProperties
 from api.models.cache import UpdateStatus
+from api.services.cached_data import list_prices
 
 # Global variables for sales reports
 sales_reports_rows: Dict[str, RowDicts] = { "row_dicts": RowDicts(row_dicts=[]) }
@@ -71,6 +72,18 @@ async def update_sales_reports(repeat: bool, retries: int = 5):
         sales_rows = await get_sales_reports_rows(
           file_ids=file_ids, months_span=months_span
         )
+
+        # Retrieve the latest list prices
+        sku_to_list_price = list_prices.get_updated_skus_to_list_prices()
+
+        # Add list price data to sales rows
+        for row in sales_rows.row_dicts:
+          list_price = float(sku_to_list_price.get(row["SKU"], 0.0))
+          if not list_price:
+            continue
+
+          row["Brand Gender Category"] = f"{str(row['Brand']).lower()} {row['Gender']} {row['Type']}"
+          row["MSRP"] = int(row["Qty"]) * list_price
 
         # Update the sales reports global variables
         sales_reports_rows["row_dicts"] = sales_rows

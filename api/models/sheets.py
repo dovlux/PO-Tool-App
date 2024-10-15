@@ -58,5 +58,5 @@ class RelevantSalesProperties(SheetProperties):
     "Accrual Refund", "Payments", "Refunds", "Adjustments",
     "Grand Total + Adjustmensts - Tax + Accrual Refunds", "Items Cost", "Shipping Cost",
     "Commission", "Profit", "Brand", "ProductName", "ProductTypeName", "Type", "Gender",
-    "Age Since Received", "Vendor", "Sales Rep"
+    "Age Since Received", "Vendor", "Sales Rep", "Brand Gender Category", "MSRP",
   ]
