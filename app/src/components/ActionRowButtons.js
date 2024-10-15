@@ -3,7 +3,7 @@ import { useState } from "react";
 import DeletePoDialog from "./DeletePoDialog";
 import CreateBreakdownDialog from "./CreateBreakdownDialog";
 
-export default function RowButtons ({ row, addSnackbar, fetchPos }) {
+export default function ActionRowButtons ({ row, addSnackbar, fetchPos }) {
   const [buttonLoading, setButtonLoading] = useState(false);
 
   return (

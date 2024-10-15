@@ -5,8 +5,8 @@ import CreatePoDialog from '../components/CreatePoDialog';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import sendRequest from '../utils/sendRequest';
 import { ReactComponent as GoogleSheetsIcon } from '../icons/google-sheets-icon.svg';
-import RowButtons from "../components/RowButtons";
-import ViewLogsDialog from '../components/ViewLogsDialog';
+import ActionRowButtons from "../components/ActionRowButtons";
+import DevRowButtons from '../components/DevRowButtons';
 
 const PoHeader = ({ fetchPos, addSnackbar }) => {
   return (
@@ -54,15 +54,19 @@ const PurchaseOrders = ({ addSnackbar, setLoading }) => {
       width: 300,
       sortable: false,
       headerAlign: 'center',
-      renderCell: (params) => <RowButtons row={params.row} addSnackbar={addSnackbar} fetchPos={fetchPos} />
+      renderCell: (params) => <ActionRowButtons
+        row={params.row} addSnackbar={addSnackbar} fetchPos={fetchPos}
+      />
     },
     {
-      field: 'logs',
-      headerName: 'Logs',
-      width: 150,
+      field: 'dev',
+      headerName: 'Dev Tools',
+      width: 300,
       sortable: false,
       headerAlign: 'center',
-      renderCell: (params) => <ViewLogsDialog row={params.row} />
+      renderCell: (params) => <DevRowButtons
+        row={params.row} addSnackbar={addSnackbar} fetchPos={fetchPos}
+      />
     },
     { field: 'spreadsheet_id', headerName: '', width: 70, sortable: false, renderCell: (params) => {
         if (!params.value) {

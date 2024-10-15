@@ -39,10 +39,18 @@ async def get_purchase_order(id: int):
   purchase_order = po_crud.get_purchase_order(id=id)
   return purchase_order
 
-@router.put("/purchase-orders/{id}", response_model=po_models.PurchaseOrderOut)
+@router.put("/purchase-orders/{id}", response_model=ResponseMsg)
 async def update_purchase_order(id: int, updates: po_models.UpdatePurchaseOrder):
-  updated_po = po_crud.update_purchase_order(id=id, updates=updates)
-  return updated_po
+  message = po_crud.update_purchase_order(id=id, updates=updates)
+
+  if updates.status is not None:
+    po_crud.add_log_to_purchase_order(
+      id=id, log=po_models.Log(
+        user="pending", message=f"Status changed to {updates.status}.", type="user"
+      )
+    )
+
+  return message
 
 @router.delete("/purchase-orders/{id}", response_model=ResponseMsg)
 async def delete_purchase_order(id: int):
