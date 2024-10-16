@@ -10,6 +10,7 @@ from api.services.utils.send_emails import send_error_email
 from api.models.sheets import RowDicts, SalesReportProperties
 from api.models.cache import UpdateStatus
 from api.services.cached_data import list_prices
+from api.services.cached_data import marketplaces
 
 # Global variables for sales reports
 sales_reports_rows: Dict[str, RowDicts] = { "row_dicts": RowDicts(row_dicts=[]) }
@@ -76,13 +77,21 @@ async def update_sales_reports(repeat: bool, retries: int = 5):
         # Retrieve the latest list prices
         sku_to_list_price = list_prices.get_updated_skus_to_list_prices()
 
+        # Retrieve the latest marketplace group data
+        marketplace_to_groups = marketplaces.get_updated_marketplaces_to_groups()
+
         final_sales_rows: List[Dict[str, Any]] = []
 
         # Add list price data to sales rows
         for row in sales_rows.row_dicts:
           list_price = float(sku_to_list_price.get(row["SKU"], 0.0))
-          if not list_price:
+          if not list_price or not row["Order Date"] or not row["Marketplace"]:
             continue
+          if not row["Marketplace"] in marketplace_to_groups:
+            raise HTTPException(
+              status_code=status.HTTP_404_NOT_FOUND,
+              detail=f"Could not find '{row["Marketplace"]}' in marketplace groups.",
+            )
 
           row["Brand Gender Category"] = f"{str(row['Brand']).lower()} {row['Gender']} {row['Type']}"
           row["MSRP"] = int(row["Qty"]) * list_price

@@ -72,7 +72,7 @@ const Developer = ({ setLoading, addSnackbar }) => {
       let rows = await getCacheStatus();
       setCacheRows(rows);
     } catch (error) {
-      if (!background) addSnackbar(error.message);
+      if (!background) addSnackbar(error.message, false);
     } finally {
       if (!background) setLoading(false);
     }

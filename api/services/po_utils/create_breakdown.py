@@ -3,6 +3,7 @@ from typing import Dict, Any
 
 from api.services.po_utils.breakdown_validation import validate_worksheet_for_breakdown
 from api.services.cached_data.sales_reports import get_updated_sales_reports_rows
+from api.services.cached_data.marketplaces import get_updated_marketplaces_to_groups
 from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_order, get_purchase_order
 from api.models.sheets import RelevantSalesProperties, WorksheetProperties, RowDicts, BreakdownProperties
 from api.services.google_api import sheets_utils
@@ -21,7 +22,7 @@ async def create_breakdown(po_id: int) -> None:
     return
   
   add_log_to_purchase_order(
-    id=po_id, log=Log(user="Internal", message="Creating breakdown.", type="log")
+    id=po_id, log=Log(user="Internal", message="Creating breakdown.", type="log"),
   )
   
   try:
@@ -32,7 +33,7 @@ async def create_breakdown(po_id: int) -> None:
     brand_gender_types: set[str] = set()
     group_to_brand_gender_type: dict[str, str] = {}
 
-    # Get brand_gender_type, group, total cost, and total msrp for each row
+    # Get brand_gender_type, group, total cost, and total msrp for each row in worksheet
     for row in worksheet_values.row_dicts:
       brand_gender_type: str = f"{row['Brand'].lower()} {row['Gender']} {row['Category']}"
       brand_gender_types.add(brand_gender_type)
@@ -47,15 +48,20 @@ async def create_breakdown(po_id: int) -> None:
       row["Total Cost"] = float(row["Unit Cost"]) * int(row["Qty"])
       row["Total Msrp"] = float(row["Retail"]) * int(row["Qty"])
 
+    add_log_to_purchase_order(
+      id=po_id, log=Log(user="Internal", message="Compiled worksheet data.", type="log"),
+    )
+
     # Get relevant sales for products in the PO
     relevant_sales_rows = [
       sales_row for sales_row in sales_reports_rows
       if sales_row["Order Date"]
       and sales_row["Brand Gender Category"] in brand_gender_types
-      and sales_row['Marketplace']
     ]
 
+    # Retrieve marketplace-to-group dict
     marketplace_groups = ["Ecom", "Retail", "Wholesale", "Scarce"]
+    marketplace_to_groups = get_updated_marketplaces_to_groups()
 
     # Get sales and msrp data by marketplace for each brand-gender-type
     brand_gender_type_data = {
@@ -72,12 +78,16 @@ async def create_breakdown(po_id: int) -> None:
     for row in relevant_sales_rows:
       sales = row["Grand Total + Adjustmensts - Tax + Accrual Refunds"]
       msrp = row["MSRP"]
-      marketplace = row["Marketplace"]
+      marketplace = marketplace_to_groups[row["Marketplace"]]
 
       entry_to_update = brand_gender_type_data[row["Brand Gender Category"]]
       entry_to_update["totals"]["total_sales"] += sales
       entry_to_update[marketplace]["total_sales"] += sales
       entry_to_update[marketplace]["total_msrp"] += msrp
+
+    add_log_to_purchase_order(
+      id=po_id, log=Log(user="Internal", message="Compiled relevant sales data.", type="log"),
+    )
 
     # Calculate Discount, Market Share, and Profit-to-Msrp for each marketplace
     for brand_gndr_type in brand_gender_types:
@@ -105,6 +115,10 @@ async def create_breakdown(po_id: int) -> None:
         )
         sales_data[marketplace_with_highest_share]["market_share"] += remainder
 
+    add_log_to_purchase_order(
+      id=po_id, log=Log(user="Internal", message="Compiled relevant market data.", type="log"),
+    )
+
     # Initialize list of row_dicts for Breakdown sheet
     breakdown_row_dicts = RowDicts(row_dicts=[])
 
@@ -125,20 +139,24 @@ async def create_breakdown(po_id: int) -> None:
       row_dict: Dict[str, Any] = {
         "Product Group": group,
         "Total Cost": total_cost,
-        "Total Msrp": total_msrp,
+        "Total MSRP": total_msrp,
       }
 
       # Add marketplace data to row-dict
       for marketplace in marketplace_groups:
         market_data = brand_gender_type_data[brand_gender_type][marketplace]
-        row_dict[f"{group} Start Discount"] = market_data["discount"]
-        row_dict[f"{group} Sales %"] = market_data["market_share"]
+        row_dict[f"{marketplace} Start Discount"] = market_data["discount"]
+        row_dict[f"{marketplace} Sales %"] = market_data["market_share"]
 
       # Add compiled row-dict to breakdown-row-dicts
       breakdown_row_dicts.row_dicts.append(row_dict)
 
     # Sort breakdown rows based on Group names
     sorted_row_dicts = sorted(breakdown_row_dicts.row_dicts, key=lambda x: x["Product Group"])
+
+    add_log_to_purchase_order(
+      id=po_id, log=Log(user="Internal", message="Compiled breakdown rows.", type="log"),
+    )
 
     # Post Breakdown to breakdown sheet
     await sheets_utils.post_row_dicts_to_spreadsheet(
