@@ -11,6 +11,7 @@ from api.models.sheets import RowDicts, SalesReportProperties
 from api.models.cache import UpdateStatus
 from api.services.cached_data import list_prices
 from api.services.cached_data import marketplaces
+from api.crud.settings import get_breakdown_net_sales_settings
 
 # Global variables for sales reports
 sales_reports_rows: Dict[str, RowDicts] = { "row_dicts": RowDicts(row_dicts=[]) }
@@ -52,9 +53,11 @@ async def update_sales_reports(repeat: bool, retries: int = 5):
   This function will be called on application startup to update the sales reports
   once a day. (Can be called manually as well)
   """
-  months_span: int = 6
   sales_reports_root_folder_id: str = "1YVeKul5kUUb4hr-bI8M20h2D94JM2W5w"
   sales_reports_update_status.status = "Updating..."
+
+  current_settings = get_breakdown_net_sales_settings()
+  months_span = current_settings.sales_history_months
 
   while True:
     attempt: int = 0

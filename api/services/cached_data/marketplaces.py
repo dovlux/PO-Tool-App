@@ -7,6 +7,7 @@ from api.services.google_api import sheets_utils
 from api.services.utils.send_emails import send_error_email
 from api.models.cache import UpdateStatus
 from api.models.sheets import MarketplaceProperties
+from api.crud.settings import get_breakdown_net_sales_settings
 
 marketplaces_to_groups: Dict[str, Dict[str, str]] = {"marketplaces": {}}
 
@@ -47,8 +48,10 @@ async def update_marketplaces(repeat: bool, retries: int = 5):
   This function will be called on application startup to update the marketplaces
   once a day. (Can be called manually as well)
   """
-  valid_marketplace_groups: List[str] = ["Ecom", "Retail", "Wholesale", "Scarce"]
   marketplaces_update_status.status = "Updating..."
+
+  current_settings = get_breakdown_net_sales_settings()
+  valid_marketplace_groups = current_settings.marketplace_groups
 
   while True:
     attempt: int = 0
