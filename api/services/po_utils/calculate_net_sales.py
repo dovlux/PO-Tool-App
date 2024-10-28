@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 
 from api.services.po_utils.net_sales_validation import validate_for_net_sales
 from api.crud.settings import get_breakdown_net_sales_settings
-from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_order
+from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_order, get_purchase_order
 from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet
 from api.models.purchase_orders import Log, UpdatePurchaseOrder
 from api.models.sheets import BreakdownProperties
@@ -12,7 +12,9 @@ async def calculate_net_sales(po_id: int):
   try:
     current_settings = get_breakdown_net_sales_settings()
 
-    breakdown_values = await validate_for_net_sales(po_id=po_id, current_settings=current_settings)
+    po = get_purchase_order(id=po_id)
+
+    breakdown_values = await validate_for_net_sales(po=po, current_settings=current_settings)
     if breakdown_values is None:
       return
     
@@ -22,6 +24,20 @@ async def calculate_net_sales(po_id: int):
 
     add_gross_net_and_fees(
       breakdown_rows=breakdown_values.row_dicts, current_settings=current_settings,
+    )
+
+    products_cost = sum(float(row["Total Cost"]) for row in breakdown_values.row_dicts)
+    fees = po.additional_fees
+    total_fees = 0.0 if fees is None else fees.shipping_fees + fees.customs_fees + fees.other_fees
+    total_cost = products_cost + total_fees
+
+    add_log_to_purchase_order(
+      id=po_id, log=Log(user="Internal", message="Adding all projections.", type="log"),
+    )
+
+    add_all_projections(
+      breakdown_rows=breakdown_values.row_dicts, current_settings=current_settings,
+      products_cost=products_cost, total_cost=total_cost,
     )
 
     await post_row_dicts_to_spreadsheet(
@@ -70,3 +86,43 @@ def add_gross_net_and_fees(
     row["Projected Sales"] = total_gross
     row["Projected Fees"] = selling_fees
     row["Projected Net Sales"] = total_net
+
+def add_all_projections(
+  breakdown_rows: List[Dict[str, Any]], current_settings: BreakdownNetSalesSettings,
+  products_cost: float, total_cost: float,
+):
+  ratio = total_cost / products_cost
+
+  for row in breakdown_rows:
+    weighted_cost = float(row["Total Cost"]) * ratio
+    turnover_days = int(row["Sell-through"])
+    turnover_months = turnover_days / 30
+
+    holding_cost = calc_opportunity_cost(
+      cost=weighted_cost, turnover_days=turnover_days,
+      monthly_opportunity_cost=current_settings.monthly_opportunity_cost,
+    )
+
+    projected_profit = float(row["Projected Net Sales"]) - weighted_cost - holding_cost
+    monthly_roi = (projected_profit / turnover_months) / (weighted_cost / 2)
+    new_discount = weighted_cost / float(row["Total MSRP"])
+
+    row["Holding Cost"] = holding_cost
+    row["Monthly ROI"] = monthly_roi
+    row["Weighted Cost"] = weighted_cost
+    row["New Discount"] = new_discount
+    row["Total Projected Profit"] = projected_profit
+
+def calc_opportunity_cost(cost: float, turnover_days: int, monthly_opportunity_cost: int) -> float:
+  daily_interest_rate = monthly_opportunity_cost / 100 / 30
+  outstanding_cost = cost
+  total_interest = 0.0
+  daily_revenue = cost / turnover_days
+
+  for _ in range(turnover_days):
+    daily_interest = outstanding_cost * daily_interest_rate
+    total_interest += daily_interest
+    outstanding_cost += daily_interest
+    outstanding_cost -= daily_revenue
+
+  return total_interest

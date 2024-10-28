@@ -1,46 +1,45 @@
 from typing import List, Dict
 
-from api.crud.purchase_orders import add_log_to_purchase_order, update_purchase_order, get_purchase_order
+from api.crud.purchase_orders import add_log_to_purchase_order, update_purchase_order
 from api.services.google_api.sheets_utils import get_row_dicts_from_spreadsheet, post_row_dicts_to_spreadsheet 
 from api.models.sheets import BreakdownProperties, WorksheetProperties
-from api.models.purchase_orders import Log, UpdatePurchaseOrder
+from api.models.purchase_orders import Log, UpdatePurchaseOrder, PurchaseOrderOut
 from api.models.sheets import SheetValues
 from api.models.settings import BreakdownNetSalesSettings
 
 async def validate_for_net_sales(
-  po_id: int, current_settings: BreakdownNetSalesSettings
+  po: PurchaseOrderOut, current_settings: BreakdownNetSalesSettings
 ) -> SheetValues | None:
   """
   This function validates the data in the worksheet and breakdown sheets of the Purchase Order
   spreadsheet to prepare for calculating the net sales.    
   """
   add_log_to_purchase_order(
-    id=po_id, log=Log(user="Internal", message="Validating data for Net Sales.", type="log"),
+    id=po.id, log=Log(user="Internal", message="Validating data for Net Sales.", type="log"),
   )
   
   try:
     # Get spreadsheet_id for po using po_id
-    po = get_purchase_order(id=po_id)
     spreadsheet_id = po.spreadsheet_id
     if spreadsheet_id is None:
       add_log_to_purchase_order(
-        id=po_id, log=Log(user="Internal", message="Could not find spreadsheet for PO.", type="error")
+        id=po.id, log=Log(user="Internal", message="Could not find spreadsheet for PO.", type="error")
       )
-      update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Internal Error"))
+      update_purchase_order(id=po.id, updates=UpdatePurchaseOrder(status="Internal Error"))
       return
 
     # Get total costs and msrps for all groups from worksheet sheet
     try:
       add_log_to_purchase_order(
-        id=po_id, log=Log(user="Internal", message="Retrieving totals from worksheet sheet.", type="log"),
+        id=po.id, log=Log(user="Internal", message="Retrieving totals from worksheet sheet.", type="log"),
       )
       group_totals = await get_total_costs_and_msrps(spreadsheet_id=spreadsheet_id)
 
     except Exception as e:
       add_log_to_purchase_order(
-        id=po_id, log=Log(user="Internal", message=f"Failed to retrieve totals. Error: {str(e)}", type="error")
+        id=po.id, log=Log(user="Internal", message=f"Failed to retrieve totals. Error: {str(e)}", type="error")
       )
-      update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Internal Error"))
+      update_purchase_order(id=po.id, updates=UpdatePurchaseOrder(status="Internal Error"))
       return
 
     # Get values and rows from Breakdown sheet
@@ -50,7 +49,7 @@ async def validate_for_net_sales(
     breakdown_rows = breakdown_values.row_dicts
 
     add_log_to_purchase_order(
-      id=po_id, log=Log(user="Internal", message="Validating all breakdown rows.", type="log")
+      id=po.id, log=Log(user="Internal", message="Validating all breakdown rows.", type="log")
     )
 
     has_errors: bool = False
@@ -119,25 +118,25 @@ async def validate_for_net_sales(
       )
 
       update_purchase_order(
-        id=po_id, updates=UpdatePurchaseOrder(status="Errors in worksheet (Net Sales)")
+        id=po.id, updates=UpdatePurchaseOrder(status="Errors in worksheet (Net Sales)")
       )
 
       add_log_to_purchase_order(
-        id=po_id, log=Log(user="Internal", message="Errors found and posted to worksheet.", type="error")
+        id=po.id, log=Log(user="Internal", message="Errors found and posted to worksheet.", type="error")
       )
 
     else:
       add_log_to_purchase_order(
-        id=po_id, log=Log(user="Internal", message="Breakdown content validated", type="log")
+        id=po.id, log=Log(user="Internal", message="Breakdown content validated", type="log")
       )
 
       return breakdown_values
     
   except Exception as e:
-    update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Internal Error"))
+    update_purchase_order(id=po.id, updates=UpdatePurchaseOrder(status="Internal Error"))
 
     add_log_to_purchase_order(
-      id=po_id, log=Log(user="Internal", message=str(e), type="error")
+      id=po.id, log=Log(user="Internal", message=str(e), type="error")
     )
 
 async def get_total_costs_and_msrps(spreadsheet_id: str) -> Dict[str, Dict[str, float]]:
