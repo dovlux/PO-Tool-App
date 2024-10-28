@@ -36,7 +36,7 @@ export default function ActionRowButtons ({ row, addSnackbar, fetchPos }) {
       {(
         row.is_ats === false &&
         (row.status === "Breakdown Created" ||
-        row.status === "Errors in worksheet (Calculate Net Sales)")
+        row.status === "Errors in worksheet (Net Sales)")
       ) && (
         <CalculateNetSalesDialog
           buttonLoading={buttonLoading}

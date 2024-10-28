@@ -14,11 +14,17 @@ class Log(BaseModel):
   type: Literal["user", "log", "error"]
   date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class AdditionalFees(BaseModel):
+  shipping_fees: float
+  customs_fees: float
+  other_fees: float
+
 class PurchaseOrderDB(PurchaseOrderIn):
   date_created: str
   status: str
   logs: List[Log]
   spreadsheet_id: str | None = None
+  additional_fees: AdditionalFees | None = None
 
 class PurchaseOrderOut(PurchaseOrderDB):
   id: int
@@ -36,6 +42,7 @@ class NewPurchaseOrderAts(FileCopyData):
 class UpdatePurchaseOrder(BaseModel):
   status: str | None = None
   spreadsheet_id: str | None = None
+  additional_fees: AdditionalFees | None = None
 
 class UpdatePurchaseOrderLog(BaseModel):
   logs: List[Log]

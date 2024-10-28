@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from typing import Dict, Any
 
+from api.crud.settings import get_breakdown_net_sales_settings
 from api.services.po_utils.breakdown_validation import validate_worksheet_for_breakdown
 from api.services.cached_data.sales_reports import get_updated_sales_reports_rows
 from api.services.cached_data.marketplaces import get_updated_marketplaces_to_groups
@@ -60,7 +61,8 @@ async def create_breakdown(po_id: int) -> None:
     ]
 
     # Retrieve marketplace-to-group dict
-    marketplace_groups = ["Ecom", "Retail", "Wholesale", "Scarce"]
+    current_settings = get_breakdown_net_sales_settings()
+    marketplace_groups = current_settings.marketplace_groups
     marketplace_to_groups = get_updated_marketplaces_to_groups()
 
     # Get sales and msrp data by marketplace for each brand-gender-type
@@ -176,7 +178,7 @@ async def create_breakdown(po_id: int) -> None:
       row_dicts=worksheet_values.row_dicts,
     )
 
-    update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Breakdown created"))
+    update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Breakdown Created"))
 
     add_log_to_purchase_order(
       id=po_id, log=Log(user="Internal", message="Breakdown Created.", type="log")

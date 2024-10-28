@@ -1,12 +1,15 @@
 from typing import List, Dict
 
-from api.crud.settings import get_breakdown_net_sales_settings
 from api.crud.purchase_orders import add_log_to_purchase_order, update_purchase_order, get_purchase_order
 from api.services.google_api.sheets_utils import get_row_dicts_from_spreadsheet, post_row_dicts_to_spreadsheet 
 from api.models.sheets import BreakdownProperties, WorksheetProperties
 from api.models.purchase_orders import Log, UpdatePurchaseOrder
+from api.models.sheets import SheetValues
+from api.models.settings import BreakdownNetSalesSettings
 
-async def validate_for_net_sales(po_id: int):
+async def validate_for_net_sales(
+  po_id: int, current_settings: BreakdownNetSalesSettings
+) -> SheetValues | None:
   """
   This function validates the data in the worksheet and breakdown sheets of the Purchase Order
   spreadsheet to prepare for calculating the net sales.    
@@ -25,9 +28,6 @@ async def validate_for_net_sales(po_id: int):
       )
       update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Internal Error"))
       return
-    
-    # Get current setting for calculating net sales
-    current_settings = get_breakdown_net_sales_settings()
 
     # Get total costs and msrps for all groups from worksheet sheet
     try:
@@ -95,13 +95,15 @@ async def validate_for_net_sales(po_id: int):
           sales_share = float(row[sales_col])
           if sales_share < 0 or sales_share > 1:
             error_msgs.append(f"Invalid {sales_col}")
+          else:
+            total_share += sales_share
         except ValueError:
           error_msgs.append(f"{sales_col} must be a number")
 
       if total_share != 1:
         error_msgs.append("'Sales %' does not add up to 100%")
 
-      if row["Confidende"] not in current_settings.confidence_discounts:
+      if row["Confidence"] not in current_settings.confidence_discounts:
         error_msgs.append("Invalid Confidence value")
 
       if row["Sell-through"] not in current_settings.sell_through_options:
