@@ -60,7 +60,8 @@ const PurchaseOrders = ({ addSnackbar, setLoading }) => {
     { field: 'date_created', type: 'date', headerName: 'Date Created', width: 150,
       valueGetter: (value) => new Date(JSON.parse(value)),
     },
-    { field: 'status', headerName: 'Status', width: 300},
+    { field: 'status', headerName: 'Status', width: 300 },
+    { field: 'currency', headerName: 'Currency', width: 100 },
     {
       field: 'actions',
       headerName: 'Actions',

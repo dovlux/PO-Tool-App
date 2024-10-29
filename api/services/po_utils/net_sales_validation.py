@@ -153,7 +153,7 @@ async def get_total_costs_and_msrps(spreadsheet_id: str) -> Dict[str, Dict[str, 
     qty = int(row["Qty"])
     if group not in group_totals:
       group_totals[group] = {"total_cost": 0.0, "total_msrp": 0.0}
-    group_totals[group]["total_cost"] = float(row["Unit Cost"]) * qty
-    group_totals[group]["total_msrp"] = float(row["Retail"]) * qty
+    group_totals[group]["total_cost"] += float(row["Unit Cost (USD)"]) * qty
+    group_totals[group]["total_msrp"] += float(row["Retail"]) * qty
 
   return group_totals

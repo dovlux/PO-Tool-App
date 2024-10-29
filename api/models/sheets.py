@@ -42,7 +42,7 @@ class ItemTypesProperties(SheetProperties):
 class WorksheetProperties(SheetProperties):
   sheet_name: str = "Worksheet"
   required_headers: List[str] = [
-    "Brand", "Description", "Item Type", "Color", "Size", "MPN", "Retail", "Unit Cost",
+    "Brand", "Description", "Item Type", "Color", "Size", "MPN", "Retail", "Unit Cost", "Unit Cost (USD)",
     "Qty", "Grade", "Weighted Cost", "Errors", "Group", "ProductID", "LightSpeed Url",
   ]
 

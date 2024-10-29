@@ -7,6 +7,7 @@ from api.models.drive import FileCopyData
 class PurchaseOrderIn(BaseModel):
   name: str
   is_ats: bool
+  currency: Literal["USD", "EUR", "JPY", "GBP"]
 
 class Log(BaseModel):
   user: str
@@ -25,6 +26,7 @@ class PurchaseOrderDB(PurchaseOrderIn):
   logs: List[Log]
   spreadsheet_id: str | None = None
   additional_fees: AdditionalFees | None = None
+  currency_conversion: float = 1
 
 class PurchaseOrderOut(PurchaseOrderDB):
   id: int

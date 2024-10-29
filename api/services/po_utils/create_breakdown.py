@@ -23,6 +23,17 @@ async def create_breakdown(po_id: int) -> None:
     return
   
   add_log_to_purchase_order(
+    id=po_id, log=Log(user="Internal", message="Converting currency to USD", type="log"),
+  )
+
+  # Convert Unit Cost to USD in worksheet 
+  conversion_rate = po.currency_conversion
+  for row in worksheet_values.row_dicts:
+    cost = float(row["Unit Cost"])
+    cost_usd = round(cost / conversion_rate, 2)
+    row["Unit Cost (USD)"] = cost_usd
+  
+  add_log_to_purchase_order(
     id=po_id, log=Log(user="Internal", message="Creating breakdown.", type="log"),
   )
   
@@ -46,7 +57,7 @@ async def create_breakdown(po_id: int) -> None:
 
       group_to_brand_gender_type[group] = brand_gender_type
 
-      row["Total Cost"] = float(row["Unit Cost"]) * int(row["Qty"])
+      row["Total Cost"] = float(row["Unit Cost (USD)"]) * int(row["Qty"])
       row["Total Msrp"] = float(row["Retail"]) * int(row["Qty"])
 
     add_log_to_purchase_order(

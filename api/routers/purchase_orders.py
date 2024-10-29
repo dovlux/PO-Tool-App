@@ -4,9 +4,10 @@ from typing import List
 import json
 
 from api.models import purchase_orders as po_models
+from api.models.response import ResponseMsg
 from api.crud import purchase_orders as po_crud
 from api.services.po_utils.create_po_worksheet import create_po_worksheet
-from api.models.response import ResponseMsg
+from api.services.currency_api.currency_queries import get_exchange_rate
 
 router = APIRouter(prefix="/api", tags=["Purchase Orders"])
 
@@ -16,10 +17,11 @@ async def create_purchase_order(
 ):
   # Create Purchase Order entry in Database
   current_time = datetime.now(tz=timezone.utc).isoformat()
+  exchange_rate = 1.0 if po.currency == "USD" else get_exchange_rate(currency=po.currency)
   new_po = po_crud.create_purchase_order(
     po=po_models.PurchaseOrderDB(
       name=po.name, is_ats=po.is_ats, date_created=json.dumps(current_time),
-      status="Creating Worksheet",
+      status="Creating Worksheet", currency=po.currency, currency_conversion=exchange_rate,
       logs=[po_models.Log(user="pending", message="Created PO.", type="user")]
     )
   )

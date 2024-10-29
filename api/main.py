@@ -16,6 +16,7 @@ from api.routers.cache import router as cache_router
 from api.routers.purchase_orders import router as po_router
 from api.routers.po_actions import router as po_actions_router
 from api.routers.settings import router as settings_router
+from api.routers.currencies import router as currency_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,3 +54,4 @@ app.include_router(cache_router)
 app.include_router(po_router)
 app.include_router(po_actions_router)
 app.include_router(settings_router)
+app.include_router(currency_router)
