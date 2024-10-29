@@ -63,7 +63,7 @@ def add_gross_net_and_fees(
 ) -> None:
   for row in breakdown_rows:
     msrp = float(row["Total MSRP"])
-    confidence_adj = current_settings.confidence_discounts[row["Confidence"]]
+    confidence_adj = 1 - current_settings.confidence_discounts[row["Confidence"]]
 
     total_gross = 0.0
     total_net = 0.0

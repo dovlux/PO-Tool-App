@@ -73,7 +73,7 @@ export default function CalculateNetSalesDialog({ id, addSnackbar, fetchPos }) {
   return (
     <>
       <Button variant="contained" color="success" onClick={handleOpen}>
-        Calculate Net Sales
+        Net Sales
       </Button>
       <Dialog
         open={open}

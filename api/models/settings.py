@@ -18,3 +18,7 @@ class UpdateBreakdownNetSalesSettings(BaseModel):
   net_sales_percentages: Dict[str, float] | None = None
   sales_history_months: int | None = None
   sell_through_options: List[str] | None = None
+
+class SellercloudSettings(BaseModel):
+  username: str
+  password: str

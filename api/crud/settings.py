@@ -47,3 +47,26 @@ def update_breakdown_net_sales_settings(
       status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
       detail=f"Could not update Breakdown Net Sales Settings. {str(e)}",
     )
+  
+def get_sellercloud_settings() -> settings_models.SellercloudSettings:
+  try:
+    doc_ref = settings_collection.document("sellercloud")
+    settings_doc = doc_ref.get() # type: ignore
+
+    if not settings_doc.exists:
+      raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Settings document does not exist.",
+      )
+    
+    settings_data = settings_doc.to_dict()
+    return settings_models.SellercloudSettings(**settings_data) # type: ignore
+  
+  except HTTPException:
+    raise
+
+  except Exception as e:
+    raise HTTPException(
+      status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+      detail=f"Could not retrieve Sellercloud Settings. {str(e)}"
+    )
