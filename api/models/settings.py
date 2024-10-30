@@ -26,3 +26,9 @@ class SellercloudSettings(BaseModel):
   ats_company_id: int
   ats_vendor_id: int
   ats_warehouse_id: int
+
+class LightspeedSettings(BaseModel):
+  username: str
+  password: str
+  server_ip: str
+  port: str

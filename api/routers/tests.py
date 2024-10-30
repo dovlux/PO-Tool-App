@@ -5,31 +5,33 @@ from api.crud.settings import get_sellercloud_settings
 from api.services.sellercloud.base import get_token
 from api.services.sellercloud.skus import get_catalog_info, check_if_skus_exist, create_skus
 from api.services.sellercloud.jobs import set_job_priority_to_critical
+from api.services.lightspeed.product_import import import_products
 from api.models.sellercloud import CreateProduct
+from api.models.lightspeed import ImportProduct
 
-router = APIRouter(prefix="/api/sellercloud", tags=["Sellercloud"])
+router = APIRouter(prefix="/api/sellercloud")
 
-@router.post("/get-token", response_model=Dict[str, str])
+@router.post("/get-token", tags=["Sellercloud"], response_model=Dict[str, str])
 async def get_bearer_token():
   sc_settings = get_sellercloud_settings()
   bearer_token = await get_token(sc_settings=sc_settings)
   return { "token": bearer_token }
 
-@router.post("/get-catalog-info")
+@router.post("/get-catalog-info", tags=["Sellercloud"])
 async def get_product_catalog_info(skus: List[str]) -> List[str]:
   sc_settings = get_sellercloud_settings()
   token = await get_token(sc_settings=sc_settings)
   catalog_info = await get_catalog_info(token=token, skus=skus) # type: ignore
   return catalog_info # type: ignore
 
-@router.post("/check-if-skus-exist")
+@router.post("/check-if-skus-exist", tags=["Sellercloud"])
 async def get_existing_skus(skus: List[str]) -> List[str]:
   sc_settings = get_sellercloud_settings()
   token = await get_token(sc_settings=sc_settings)
   existing_skus = await check_if_skus_exist(token=token, skus=skus)
   return existing_skus
 
-@router.post("/create-skus")
+@router.post("/create-skus", tags=["Sellercloud"])
 async def create_products(products: List[CreateProduct]) -> int:
   sc_settings = get_sellercloud_settings()
   token = await get_token(sc_settings=sc_settings)
@@ -37,3 +39,8 @@ async def create_products(products: List[CreateProduct]) -> int:
   await set_job_priority_to_critical(token=token, job_id=job_id)
   print("Reached return")
   return job_id
+
+@router.post("/import-products", tags=["Lightspeed"])
+async def import_ls_products(products: List[ImportProduct]) -> Dict[str, bool | str | List[str]]:
+  results = await import_products(products=products)
+  return results

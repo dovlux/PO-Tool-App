@@ -9,7 +9,7 @@ url_header = "https://lux.api.sellercloud.com/rest/api/"
 async def sellercloud_api_call(
   method: Literal["get", "post", "put", "delete"],
   endpoint: str, token: str, body: Dict[str, Any] | None = None,
-):
+) -> Any | None:
   headers = { "Authorization": f"Bearer {token}"}
   url = url_header + endpoint
 
