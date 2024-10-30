@@ -1,0 +1,16 @@
+from pydantic import BaseModel
+
+class CreateProduct(BaseModel):
+  ProductID: str
+  ProductName: str
+  ManufacturerSKU: str
+  BrandName: str
+  ListPrice: str
+  WebsitePrice: str
+  SitePrice: str
+  ProductTypeName: str
+  SiteCost: str = ""
+  LightspeedPOSEnabled: str = "TRUE"
+  LIGHTSPEED_SYSTEM_ID: str
+  UPC: str
+  ASSIGN_TO_ATS: bool

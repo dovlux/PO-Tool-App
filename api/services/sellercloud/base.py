@@ -2,7 +2,7 @@ import httpx
 from typing import Literal, Dict, Any
 from fastapi import HTTPException, status
 
-from api.crud.settings import get_sellercloud_settings
+from api.models.settings import SellercloudSettings
 
 url_header = "https://lux.api.sellercloud.com/rest/api/"
 
@@ -24,15 +24,15 @@ async def sellercloud_api_call(
       response = await client.delete(url=url, headers=headers)
 
     if response.status_code == 200:
-      data = response.json()
-      return data
+      if method != "put":
+        data = response.json()
+        return data
     else:
       response.raise_for_status()
 
-async def get_token() -> str:
-  auth_info = get_sellercloud_settings()
+async def get_token(sc_settings: SellercloudSettings) -> str:
   url = url_header + "token"
-  body = { "username": auth_info.username, "password": auth_info.password }
+  body = { "username": sc_settings.username, "password": sc_settings.password }
 
   try:
     async with httpx.AsyncClient() as client:

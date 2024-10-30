@@ -22,3 +22,7 @@ class UpdateBreakdownNetSalesSettings(BaseModel):
 class SellercloudSettings(BaseModel):
   username: str
   password: str
+  default_company_id: int
+  ats_company_id: int
+  ats_vendor_id: int
+  ats_warehouse_id: int
