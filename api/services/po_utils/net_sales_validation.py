@@ -2,13 +2,14 @@ from typing import List, Dict
 
 from api.crud.purchase_orders import add_log_to_purchase_order, update_purchase_order
 from api.services.google_api.sheets_utils import get_row_dicts_from_spreadsheet, post_row_dicts_to_spreadsheet 
-from api.models.sheets import BreakdownProperties, WorksheetProperties
+from api.models.sheets import BreakdownProperties
 from api.models.purchase_orders import Log, UpdatePurchaseOrder, PurchaseOrderOut
-from api.models.sheets import SheetValues
+from api.models.sheets import SheetValues, RowDicts
 from api.models.settings import BreakdownNetSalesSettings
 
 async def validate_for_net_sales(
-  po: PurchaseOrderOut, current_settings: BreakdownNetSalesSettings
+  po: PurchaseOrderOut, current_settings: BreakdownNetSalesSettings,
+  worksheet_rows: RowDicts, spreadsheet_id: str,
 ) -> SheetValues | None:
   """
   This function validates the data in the worksheet and breakdown sheets of the Purchase Order
@@ -19,21 +20,12 @@ async def validate_for_net_sales(
   )
   
   try:
-    # Get spreadsheet_id for po using po_id
-    spreadsheet_id = po.spreadsheet_id
-    if spreadsheet_id is None:
-      add_log_to_purchase_order(
-        id=po.id, log=Log(user="Internal", message="Could not find spreadsheet for PO.", type="error")
-      )
-      update_purchase_order(id=po.id, updates=UpdatePurchaseOrder(status="Internal Error"))
-      return
-
     # Get total costs and msrps for all groups from worksheet sheet
     try:
       add_log_to_purchase_order(
         id=po.id, log=Log(user="Internal", message="Retrieving totals from worksheet sheet.", type="log"),
       )
-      group_totals = await get_total_costs_and_msrps(spreadsheet_id=spreadsheet_id)
+      group_totals = await get_total_costs_and_msrps(worksheet_rows=worksheet_rows)
 
     except Exception as e:
       add_log_to_purchase_order(
@@ -139,16 +131,10 @@ async def validate_for_net_sales(
       id=po.id, log=Log(user="Internal", message=str(e), type="error")
     )
 
-async def get_total_costs_and_msrps(spreadsheet_id: str) -> Dict[str, Dict[str, float]]:
-  worksheet_values = await get_row_dicts_from_spreadsheet(
-    ss_properties=WorksheetProperties(id=spreadsheet_id),
-  )
-
-  worksheet_rows = worksheet_values.row_dicts
-
+async def get_total_costs_and_msrps(worksheet_rows: RowDicts) -> Dict[str, Dict[str, float]]:
   group_totals: Dict[str, Dict[str, float]] = {}
 
-  for row in worksheet_rows:
+  for row in worksheet_rows.row_dicts:
     group: str = row["Group"]
     qty = int(row["Qty"])
     if group not in group_totals:

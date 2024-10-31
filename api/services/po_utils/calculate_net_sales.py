@@ -3,9 +3,9 @@ from typing import List, Dict, Any
 from api.services.po_utils.net_sales_validation import validate_for_net_sales
 from api.crud.settings import get_breakdown_net_sales_settings
 from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_order, get_purchase_order
-from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet
+from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet, get_row_dicts_from_spreadsheet
 from api.models.purchase_orders import Log, UpdatePurchaseOrder
-from api.models.sheets import BreakdownProperties
+from api.models.sheets import BreakdownProperties, WorksheetProperties, RowDicts
 from api.models.settings import BreakdownNetSalesSettings
 
 async def calculate_net_sales(po_id: int):
@@ -14,7 +14,22 @@ async def calculate_net_sales(po_id: int):
 
     po = get_purchase_order(id=po_id)
 
-    breakdown_values = await validate_for_net_sales(po=po, current_settings=current_settings)
+    spreadsheet_id = po.spreadsheet_id
+    if spreadsheet_id is None:
+      add_log_to_purchase_order(
+        id=po.id, log=Log(user="Internal", message="Could not find spreadsheet for PO.", type="error")
+      )
+      update_purchase_order(id=po.id, updates=UpdatePurchaseOrder(status="Internal Error"))
+      return
+
+    worksheet_values = await get_row_dicts_from_spreadsheet(
+      ss_properties=WorksheetProperties(id=spreadsheet_id),
+    )
+
+    breakdown_values = await validate_for_net_sales(
+      po=po, current_settings=current_settings,
+      worksheet_rows=worksheet_values, spreadsheet_id=spreadsheet_id
+    )
     if breakdown_values is None:
       return
     
@@ -36,13 +51,18 @@ async def calculate_net_sales(po_id: int):
     )
 
     add_all_projections(
-      breakdown_rows=breakdown_values.row_dicts, current_settings=current_settings,
-      products_cost=products_cost, total_cost=total_cost,
+      breakdown_rows=breakdown_values, current_settings=current_settings,
+      products_cost=products_cost, total_cost=total_cost, worksheet_rows=worksheet_values
     )
 
     await post_row_dicts_to_spreadsheet(
-      ss_properties=BreakdownProperties(id=breakdown_values.spreadsheet_id),
+      ss_properties=BreakdownProperties(id=spreadsheet_id),
       row_dicts=breakdown_values.row_dicts,
+    )
+
+    await post_row_dicts_to_spreadsheet(
+      ss_properties=WorksheetProperties(id=spreadsheet_id),
+      row_dicts=worksheet_values.row_dicts,
     )
 
     add_log_to_purchase_order(
@@ -88,12 +108,12 @@ def add_gross_net_and_fees(
     row["Projected Net Sales"] = total_net
 
 def add_all_projections(
-  breakdown_rows: List[Dict[str, Any]], current_settings: BreakdownNetSalesSettings,
-  products_cost: float, total_cost: float,
+  breakdown_rows: RowDicts, current_settings: BreakdownNetSalesSettings,
+  products_cost: float, total_cost: float, worksheet_rows: RowDicts,
 ):
   ratio = total_cost / products_cost
 
-  for row in breakdown_rows:
+  for row in breakdown_rows.row_dicts:
     weighted_cost = float(row["Total Cost"]) * ratio
     turnover_days = int(row["Sell-through"])
     turnover_months = turnover_days / 30
@@ -112,6 +132,9 @@ def add_all_projections(
     row["Weighted Cost"] = weighted_cost
     row["New Discount"] = new_discount
     row["Total Projected Profit"] = projected_profit
+
+  for row in worksheet_rows.row_dicts:
+    row["Weighted Cost"] = float(row["Unit Cost (USD)"]) * ratio
 
 def calc_opportunity_cost(cost: float, turnover_days: int, monthly_opportunity_cost: int) -> float:
   daily_interest_rate = monthly_opportunity_cost / 100 / 30

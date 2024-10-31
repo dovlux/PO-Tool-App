@@ -1,38 +1,22 @@
-from typing import List
 from fastapi import HTTPException, status
-import pandas as pd
-from io import BytesIO
 import aiohttp
 
-from api.models.lightspeed import ImportProduct, ImportResults
-from api.models.sheets import RowDicts
 from api.models.settings import LightspeedSettings
-from api.services.utils.csv_to_lists import csv_to_lists
+from api.models.sheets import RowDicts
+from api.models.lightspeed import ImportResults
 from api.services.google_api.sheets_utils import create_row_dicts
+from api.services.utils.csv_to_lists import csv_to_lists
 
-async def import_products(
-  products: List[ImportProduct], ls_settings: LightspeedSettings,
+async def get_import_result(
+  job_id: int, ls_settings: LightspeedSettings,
 ) -> ImportResults:
   try:
-    df = pd.DataFrame([product.model_dump(by_alias=True) for product in products])
-
-    file_stream = BytesIO()
-    with pd.ExcelWriter(file_stream, engine="openpyxl") as writer:
-      df.to_excel(writer, index=False) # type: ignore
-    file_stream.seek(0)
-    file_contents = file_stream.read()
-
     url = f"http://{ls_settings.server_ip}:{ls_settings.port}/"
-    url += f"import?username={ls_settings.username}&password={ls_settings.password}"
-
-    form_data = aiohttp.FormData()
-    form_data.add_field(
-      "file", file_contents, filename="products.xlsx",
-      content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+    url += f"importresult/?username={ls_settings.username}&password={ls_settings.password}"
+    url += f"&jobId={job_id}"
 
     async with aiohttp.ClientSession() as session:
-      async with session.post(url=url, data=form_data) as response:
+      async with session.get(url=url) as response:
         status_code = response.status
         response_text = await response.text()
 
@@ -63,5 +47,5 @@ async def import_products(
   except Exception as e:
     raise HTTPException(
       status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-      detail=f"Could not import to Lightspeed. Error: {str(e)}",
+      detail=f"Could not retrieve import results. Error {str(e)}",
     )

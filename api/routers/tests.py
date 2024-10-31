@@ -5,9 +5,7 @@ from api.crud.settings import get_sellercloud_settings
 from api.services.sellercloud.base import get_token
 from api.services.sellercloud.skus import get_catalog_info, check_if_skus_exist, create_skus
 from api.services.sellercloud.jobs import set_job_priority_to_critical
-from api.services.lightspeed.product_import import import_products
 from api.models.sellercloud import CreateProduct
-from api.models.lightspeed import ImportProduct
 
 router = APIRouter(prefix="/api/sellercloud")
 
@@ -39,8 +37,3 @@ async def create_products(products: List[CreateProduct]) -> int:
   await set_job_priority_to_critical(token=token, job_id=job_id)
   print("Reached return")
   return job_id
-
-@router.post("/import-products", tags=["Lightspeed"])
-async def import_ls_products(products: List[ImportProduct]) -> Dict[str, bool | str | List[str]]:
-  results = await import_products(products=products)
-  return results
