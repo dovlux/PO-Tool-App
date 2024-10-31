@@ -4,8 +4,9 @@ from api.services.po_utils.net_sales_validation import validate_for_net_sales
 from api.crud.settings import get_breakdown_net_sales_settings
 from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_order, get_purchase_order
 from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet, get_row_dicts_from_spreadsheet
+from api.services.google_api.sheets import post_values
 from api.models.purchase_orders import Log, UpdatePurchaseOrder
-from api.models.sheets import BreakdownProperties, WorksheetProperties, RowDicts
+from api.models.sheets import BreakdownProperties, WorksheetProperties, RowDicts, ValidationProperties
 from api.models.settings import BreakdownNetSalesSettings
 
 async def calculate_net_sales(po_id: int):
@@ -70,6 +71,22 @@ async def calculate_net_sales(po_id: int):
     )
 
     update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Net Sales Calculated"))
+
+    add_log_to_purchase_order(
+      id=po_id, log=Log(user="Internal", message="Changing Item Type validations.", type="log"),
+    )
+
+    validation_rows = await get_row_dicts_from_spreadsheet(
+      ss_properties=ValidationProperties(id=spreadsheet_id),
+    )
+
+    types_validation = [[row["ProductTypeName"]] for row in validation_rows.row_dicts]
+    cell_range = f"G2:G{len(types_validation) + 1}"
+
+    await post_values(
+      values=types_validation, spreadsheet_id=spreadsheet_id,
+      sheet_name="Validation", cell_range=cell_range,
+    )
 
   except Exception as e:
     add_log_to_purchase_order(

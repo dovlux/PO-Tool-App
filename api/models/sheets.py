@@ -70,3 +70,18 @@ class BreakdownProperties(SheetProperties):
     "Projected Fees", "Projected Net Sales", "Holding Cost", "Monthly ROI", "Weighted Cost",
     "New Discount", "Total Projected Profit", "Errors",
   ]
+
+class BrandCodesProperties(SheetProperties):
+  id: str = "1OB3OjkN4q5Gxe4qtuy0toIenHXsfT4NDrSET26Q5-34"
+  sheet_name: str = "Brand Codes"
+  required_headers: List[str] = ["Brand", "Brand Code"]
+
+class ItemTypeAcronymsProperties(SheetProperties):
+  id: str = "1OB3OjkN4q5Gxe4qtuy0toIenHXsfT4NDrSET26Q5-34"
+  sheet_name: str = "Item Types"
+  required_headers: List[str] = ["ProductTypeName", "SKU Acronym"]
+
+class ValidSizesProperties(SheetProperties):
+  id: str = "1OB3OjkN4q5Gxe4qtuy0toIenHXsfT4NDrSET26Q5-34"
+  sheet_name: str = "Valid Sizes"
+  required_headers: List[str] = ["Size", "Secondary Size Name"]
