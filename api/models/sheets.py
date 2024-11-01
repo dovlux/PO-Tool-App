@@ -85,3 +85,8 @@ class ValidSizesProperties(SheetProperties):
   id: str = "1OB3OjkN4q5Gxe4qtuy0toIenHXsfT4NDrSET26Q5-34"
   sheet_name: str = "Valid Sizes"
   required_headers: List[str] = ["Size", "Secondary Size Name"]
+
+class AliasesCreatedSkusProperties(SheetProperties):
+  id: str = "1OB3OjkN4q5Gxe4qtuy0toIenHXsfT4NDrSET26Q5-34"
+  sheet_name: str = "Aliases/Created SKUs"
+  required_headers: List[str] = ["Old Custom SKU", "MPN", "New Custom SKU"]
