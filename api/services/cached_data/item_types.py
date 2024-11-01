@@ -82,7 +82,7 @@ async def update_item_types(repeat: bool, retries: int = 5):
             error_message=str(e),
           )
         else:
-          print(f"There was an error while updating (attempt: {attempt}). Retrying in 5 seconds...")
+          print(f"There was an error while updating Item Types (attempt: {attempt}). Retrying in 5 seconds...")
           await asyncio.sleep(5)
           continue
 

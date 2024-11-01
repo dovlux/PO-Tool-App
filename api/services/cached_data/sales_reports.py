@@ -120,7 +120,7 @@ async def update_sales_reports(repeat: bool, retries: int = 5):
             error_message=str(e),
           )
         else:
-          print(f"There was an error while updating (attempt: {attempt}). Retrying in 5 seconds...")
+          print(f"There was an error while updating Sales Reports (attempt: {attempt}). Retrying in 5 seconds...")
           await asyncio.sleep(5)
           continue
 
