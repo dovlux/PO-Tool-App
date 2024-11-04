@@ -7,7 +7,7 @@ from api.services.cached_data.valid_sizes import get_updated_valid_sizes
 from api.services.google_api.sheets_utils import get_row_dicts_from_spreadsheet, post_row_dicts_to_spreadsheet
 from api.crud.purchase_orders import add_log_to_purchase_order
 from api.services.utils.mpn_formatter import remove_special_chars
-from api.models.sheets import SheetValues, WorksheetProperties
+from api.models.sheets import SheetValues, WorksheetPropertiesNonAts, WorksheetPropertiesAts
 from api.models.purchase_orders import Log
 
 async def validate_worksheet_for_po(
@@ -18,9 +18,15 @@ async def validate_worksheet_for_po(
   )
 
   try:
+    if is_ats:
+      ss_properties = WorksheetPropertiesAts(id=spreadsheet_id)
+    else:
+      ss_properties = WorksheetPropertiesNonAts(id=spreadsheet_id)
+
     worksheet_values = await get_row_dicts_from_spreadsheet(
-      ss_properties=WorksheetProperties(id=spreadsheet_id),
+      ss_properties=ss_properties,
     )
+
   except HTTPException as e:
     if e.detail == "Sheet has no cell values in non-header rows.":
       add_log_to_purchase_order(
@@ -39,18 +45,18 @@ async def validate_worksheet_for_po(
     item_type_acronyms = get_updated_item_type_acronyms()
     valid_sizes = get_updated_valid_sizes()
 
-    mpn_color_dict: Dict[str, List[str]] = {}
-    for row in worksheet_values.row_dicts:
-      if row["MPN"] not in mpn_color_dict:
-        mpn_color_dict[row["MPN"]] = []
-      mpn_color_dict[row["MPN"]].append(row["Color"])
+  mpn_color_dict: Dict[str, Set[str]] = {}
+  for row in worksheet_values.row_dicts:
+    if row["MPN"] not in mpn_color_dict:
+      mpn_color_dict[row["MPN"]] = set()
+    mpn_color_dict[row["MPN"]].add(row["Color"])
 
-    brand_mpn_description_item_type: Dict[str, Dict[str, str]] = {}
-    for row in worksheet_values.row_dicts:
-      brand_mpn_description_item_type[row["Brand"] + remove_special_chars(mpn=row["MPN"])] = {
-        "description": row["Description"],
-        "item_type": row["Item Type"],
-      }
+  brand_mpn_description_item_type: Dict[str, Dict[str, str]] = {}
+  for row in worksheet_values.row_dicts:
+    brand_mpn_description_item_type[row["Brand"] + remove_special_chars(mpn=row["MPN"])] = {
+      "description": row["Description"],
+      "item_type": row["Item Type"],
+    }
 
   has_errors = False
 
@@ -65,11 +71,11 @@ async def validate_worksheet_for_po(
       )
 
       mpn_removed_chars = remove_special_chars(mpn=row["MPN"])
-      matching_row_data = brand_mpn_description_item_type[row["Brand"] + mpn_removed_chars] # type: ignore
+      matching_row_data = brand_mpn_description_item_type[row["Brand"] + mpn_removed_chars]
       
       error_msgs.append(
         validate_description(
-          description=str(row["Description"]), matching_description=matching_row_data["description"], # type: ignore
+          description=str(row["Description"]), matching_description=matching_row_data["description"],
         )
       )
 
@@ -80,7 +86,9 @@ async def validate_worksheet_for_po(
         )
       )
 
-      error_msgs.append(validate_color(color=str(row["Color"]), mpn_colors=mpn_color_dict)) # type: ignore
+      error_msgs.append(
+        validate_color(color=row["Color"], mpn_colors=mpn_color_dict[row["MPN"]])
+      )
       
       error_msgs.append(
         validate_size(size=str(row["Size"]), is_ats=is_ats, valid_sizes=valid_sizes) # type: ignore
@@ -112,7 +120,7 @@ async def validate_worksheet_for_po(
 
   if has_errors:
     await post_row_dicts_to_spreadsheet(
-      ss_properties=WorksheetProperties(id=spreadsheet_id),
+      ss_properties=WorksheetPropertiesNonAts(id=spreadsheet_id),
       row_dicts=worksheet_values.row_dicts,
     )
 
@@ -152,10 +160,10 @@ def validate_item_type(
     return "Different item type found for same Brand & MPN on this sheet"
   return ""
 
-def validate_color(color: str, mpn_colors: Dict[str, List[str]]) -> str:
+def validate_color(color: str, mpn_colors: Set[str]) -> str:
   if not color:
     return "Missing Color"
-  elif len(mpn_colors[color]) > 1:
+  elif len(mpn_colors) > 1:
     return "This MPN has more than one color assigned in this sheet"
   return ""
 

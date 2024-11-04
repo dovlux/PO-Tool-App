@@ -55,7 +55,8 @@ export default function ActionRowButtons ({ row, addSnackbar, fetchPos }) {
         />
       )}
       {(
-        row.status === "Worksheet Created"
+        row.status === "Worksheet Created" || row.status === "Errors in worksheet (Breakdown)" ||
+        row.status === "Errors in worksheet (Create SKUs and PO)"
       ) && (
         <DeletePoDialog
           buttonLoading={buttonLoading}

@@ -2,7 +2,7 @@ from typing import List, Any
 from pydantic import BaseModel
 from fastapi import HTTPException
 
-from api.models.sheets import WorksheetProperties, ValidationProperties, SheetValues
+from api.models.sheets import WorksheetPropertiesNonAts, ValidationProperties, SheetValues
 from api.models.purchase_orders import UpdatePurchaseOrder, Log
 from api.crud.purchase_orders import get_purchase_order, update_purchase_order, add_log_to_purchase_order
 from api.services.google_api import sheets_utils
@@ -31,7 +31,7 @@ async def validate_worksheet_for_breakdown(po_id: int) -> SheetValues | None:
     # Retrieve values from the worksheet.
     try:
       worksheet_values = await sheets_utils.get_row_dicts_from_spreadsheet(
-        ss_properties=WorksheetProperties(id=worksheet_id)
+        ss_properties=WorksheetPropertiesNonAts(id=worksheet_id)
       )
     except HTTPException as e:
       if e.detail == "Sheet has no cell values in non-header rows.":
@@ -103,7 +103,7 @@ async def validate_worksheet_for_breakdown(po_id: int) -> SheetValues | None:
 
     if has_errors:
       await sheets_utils.post_row_dicts_to_spreadsheet(
-        ss_properties=WorksheetProperties(id=worksheet_id),
+        ss_properties=WorksheetPropertiesNonAts(id=worksheet_id),
         row_dicts=worksheet_row_dicts,
       )
 

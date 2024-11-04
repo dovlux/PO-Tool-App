@@ -4,8 +4,9 @@ from api.services.utils.get_aliases_dicts import get_aliases_dicts
 from api.crud.purchase_orders import add_log_to_purchase_order
 from api.services.utils.mpn_formatter import remove_special_chars
 from api.crud.settings import get_ats_settings, update_ats_settings
+from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet
 from api.models.purchase_orders import Log
-from api.models.sheets import SheetValues
+from api.models.sheets import SheetValues, WorksheetPropertiesAts, WorksheetPropertiesNonAts
 from api.models.settings import UpdateAtsSkuCreationSettings
 
 async def create_or_find_skus(
@@ -15,6 +16,11 @@ async def create_or_find_skus(
     new_sku_data = create_skus_ats(worksheet_values=worksheet_values, po_id=po_id)
   else:
     new_sku_data = await create_or_find_skus_non_ats(worksheet_values=worksheet_values, po_id=po_id)
+  
+  ss_properties = WorksheetPropertiesAts(id=worksheet_values.spreadsheet_id) if is_ats else WorksheetPropertiesNonAts(id=worksheet_values.spreadsheet_id)
+  await post_row_dicts_to_spreadsheet(
+    ss_properties=ss_properties, row_dicts=worksheet_values.row_dicts,
+  )
   
   if new_sku_data is None:
     return

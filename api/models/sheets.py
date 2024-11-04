@@ -39,11 +39,18 @@ class ItemTypesProperties(SheetProperties):
   sheet_name: str = "Item Types"
   required_headers: List[str] = ["ProductTypeName", "Gender", "Reporting Category"]
 
-class WorksheetProperties(SheetProperties):
+class WorksheetPropertiesNonAts(SheetProperties):
   sheet_name: str = "Worksheet"
   required_headers: List[str] = [
     "Brand", "Description", "Item Type", "Color", "Size", "MPN", "Retail", "Unit Cost", "Unit Cost (USD)",
     "Qty", "Grade", "Weighted Cost", "Errors", "Group", "ProductID", "LightSpeed Url",
+  ]
+
+class WorksheetPropertiesAts(SheetProperties):
+  sheet_name: str = "Worksheet"
+  required_headers: List[str] = [
+    "Brand", "Description", "Item Type", "Color", "Size", "MPN", "Retail", "Unit Cost",
+    "Qty", "Errors", "ProductID", "LightSpeed Url",
   ]
 
 class ValidationProperties(SheetProperties):

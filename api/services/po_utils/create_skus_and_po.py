@@ -30,7 +30,7 @@ async def create_skus_and_po(po_id: int) -> None:
     add_log_to_purchase_order(
       id=po_id, log=Log(
         user="Internal",
-        message=f"Creating{'/Finding SKUs' if not po.is_ats else ''} for all rows{' missing SKUs.' if not po.is_ats else ''}",
+        message=f"Creating{'/Finding SKUs' if not po.is_ats else ''} for all rows{' missing SKUs' if not po.is_ats else ''}.",
         type="log",
       )
     )

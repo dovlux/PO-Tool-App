@@ -7,7 +7,7 @@ from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_
 from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet, get_row_dicts_from_spreadsheet
 from api.services.google_api.sheets import post_values
 from api.models.purchase_orders import Log, UpdatePurchaseOrder
-from api.models.sheets import BreakdownProperties, WorksheetProperties, RowDicts, ValidationProperties
+from api.models.sheets import BreakdownProperties, WorksheetPropertiesNonAts, RowDicts, ValidationProperties
 from api.models.settings import BreakdownNetSalesSettings
 
 async def calculate_net_sales(po_id: int):
@@ -31,7 +31,7 @@ async def calculate_net_sales(po_id: int):
       return
 
     worksheet_values = await get_row_dicts_from_spreadsheet(
-      ss_properties=WorksheetProperties(id=spreadsheet_id),
+      ss_properties=WorksheetPropertiesNonAts(id=spreadsheet_id),
     )
 
     breakdown_values = await validate_for_net_sales(
@@ -69,7 +69,7 @@ async def calculate_net_sales(po_id: int):
     )
 
     await post_row_dicts_to_spreadsheet(
-      ss_properties=WorksheetProperties(id=spreadsheet_id),
+      ss_properties=WorksheetPropertiesNonAts(id=spreadsheet_id),
       row_dicts=worksheet_values.row_dicts,
     )
 
