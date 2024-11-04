@@ -61,6 +61,10 @@ async def validate_worksheet_for_po(
     row["Errors"] = error_msg_string
     if error_msg_string:
       has_errors = True
+    else:
+      if not is_ats and not row["ProductID"]:
+        row["Brand Code"] = brand_codes[row["Brand"]] # type: ignore
+        row["Type Code"] = item_type_acronyms[row["Item Type"]] # type: ignore
 
   if has_errors:
     await post_row_dicts_to_spreadsheet(
@@ -68,6 +72,7 @@ async def validate_worksheet_for_po(
       row_dicts=worksheet_values.row_dicts,
     )
     return
+  
   else:
     return worksheet_values
 

@@ -8,6 +8,7 @@ from api.models.response import ResponseMsg
 from api.crud import purchase_orders as po_crud
 from api.services.po_utils.create_po_worksheet import create_po_worksheet
 from api.services.currency_api.currency_queries import get_exchange_rate
+from api.services.utils.undo_po_status_change import get_previous_status
 
 router = APIRouter(prefix="/api", tags=["Purchase Orders"])
 
@@ -51,6 +52,24 @@ async def update_purchase_order(id: int, updates: po_models.UpdatePurchaseOrder)
         user="pending", message=f"Status changed to {updates.status}.", type="user"
       )
     )
+
+  return message
+
+@router.put("/purchase-orders/{id}/undo-status", response_model=ResponseMsg)
+async def undo_status_for_purchase_order(id: int):
+  po = po_crud.get_purchase_order(id=id)
+  current_status = po.status
+  new_status = get_previous_status(current_status=current_status)
+  message = po_crud.update_purchase_order(
+    id=id, updates=po_models.UpdatePurchaseOrder(status=new_status),
+  )
+
+  po_crud.add_log_to_purchase_order(
+    id=id, log=po_models.Log(
+      user="pending", message=f"Status changed from '{current_status}' to '{new_status}'.",
+      type="user",
+    )
+  )
 
   return message
 

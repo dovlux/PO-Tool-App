@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+from fastapi import  HTTPException, status
 
 from api.services.po_utils.net_sales_validation import validate_for_net_sales
 from api.crud.settings import get_breakdown_net_sales_settings
@@ -14,6 +15,12 @@ async def calculate_net_sales(po_id: int):
     current_settings = get_breakdown_net_sales_settings()
 
     po = get_purchase_order(id=po_id)
+
+    if po.is_ats:
+      raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Calculate Net Sales does not apply to ATS Purchase Orders",
+      )
 
     spreadsheet_id = po.spreadsheet_id
     if spreadsheet_id is None:

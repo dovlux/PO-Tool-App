@@ -46,5 +46,8 @@ class UpdatePurchaseOrder(BaseModel):
   spreadsheet_id: str | None = None
   additional_fees: AdditionalFees | None = None
 
+class UndoPurchaseOrderStatus(BaseModel):
+  status: str
+
 class UpdatePurchaseOrderLog(BaseModel):
   logs: List[Log]
