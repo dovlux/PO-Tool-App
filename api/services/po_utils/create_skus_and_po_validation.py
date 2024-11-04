@@ -39,7 +39,7 @@ async def validate_worksheet_for_po(
     else:
       raise
 
-  has_new_skus = not all(row["ProductID"] for row in worksheet_values.row_dicts)
+  has_new_skus = not all(row["ProductID"] for row in worksheet_values.row_dicts) or is_ats
   if has_new_skus:
     brand_codes = get_updated_brand_codes()
     item_type_acronyms = get_updated_item_type_acronyms()

@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from typing import List
 
-from api.models.purchase_orders import PurchaseOrderOut, Log
+from api.models.purchase_orders import Log
 from api.models.lightspeed import  ImportProduct
 from api.models.sheets import RowDicts
 from api.services.lightspeed.product_import import import_products
@@ -10,7 +10,7 @@ from api.crud.purchase_orders import add_log_to_purchase_order
 from api.crud.settings import get_lightspeed_settings
 
 async def upload_products_to_ls(
-  po: PurchaseOrderOut, products: List[ImportProduct], max_attempts: int = 5,
+  po_id: int, products: List[ImportProduct], max_attempts: int = 5,
 ) -> RowDicts:
 
   ls_settings = get_lightspeed_settings()
@@ -22,7 +22,7 @@ async def upload_products_to_ls(
   while attempt <= max_attempts:
     if not job_created:
       add_log_to_purchase_order(
-        id=po.id, log=Log(
+        id=po_id, log=Log(
           user="Internal", message=f"Uploading products to Lightspeed (Attempt: {attempt}).", type="log"
         ),
       )
@@ -33,12 +33,12 @@ async def upload_products_to_ls(
 
         if is_completed:
           add_log_to_purchase_order(
-            id=po.id, log=Log(user="Internal", message="Product uploaded successfully (LS).", type="log"),
+            id=po_id, log=Log(user="Internal", message="Product uploaded successfully (LS).", type="log"),
           )
           return results.row_dicts
         else:
           add_log_to_purchase_order(
-            id=po.id, log=Log(
+            id=po_id, log=Log(
               user="Internal", message=f"Failed to complete upload. Logs: {results.logs}", type="error"
             ),
           )
@@ -51,12 +51,12 @@ async def upload_products_to_ls(
 
       except Exception as e:
         add_log_to_purchase_order(
-          id=po.id, log=Log(user="Internal", message=f"Failed to upload. {str(e)}", type="error"),
+          id=po_id, log=Log(user="Internal", message=f"Failed to upload. {str(e)}", type="error"),
         )
 
     else:
       add_log_to_purchase_order(
-        id=po.id, log=Log(
+        id=po_id, log=Log(
           user="Internal", message="Retrieving Lightspeed import results.", type="log"
         ),
       )
@@ -68,12 +68,12 @@ async def upload_products_to_ls(
 
         if is_completed:
           add_log_to_purchase_order(
-            id=po.id, log=Log(user="Internal", message="Product uploaded successfully (LS).", type="log"),
+            id=po_id, log=Log(user="Internal", message="Product uploaded successfully (LS).", type="log"),
           )
           return results.row_dicts
         else:
           add_log_to_purchase_order(
-            id=po.id, log=Log(
+            id=po_id, log=Log(
               user="Internal",
               message=f"Failed to retrieve upload results. Logs: {results.logs}",
               type="error"
@@ -82,7 +82,7 @@ async def upload_products_to_ls(
 
       except Exception as e:
         add_log_to_purchase_order(
-          id=po.id, log=Log(
+          id=po_id, log=Log(
             user="Internal", message=f"Failed to retrieve upload results. {str(e)}", type="log"
           )
         )

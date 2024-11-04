@@ -6,6 +6,7 @@ from api.services.utils.mpn_formatter import remove_special_chars
 from api.crud.settings import get_ats_settings, update_ats_settings
 from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet
 from api.models.purchase_orders import Log
+from api.models.lightspeed import ImportProduct
 from api.models.sheets import SheetValues, WorksheetPropertiesAts, WorksheetPropertiesNonAts
 from api.models.settings import UpdateAtsSkuCreationSettings
 
@@ -16,14 +17,15 @@ async def create_or_find_skus(
     new_sku_data = create_skus_ats(worksheet_values=worksheet_values, po_id=po_id)
   else:
     new_sku_data = await create_or_find_skus_non_ats(worksheet_values=worksheet_values, po_id=po_id)
-  
-  ss_properties = WorksheetPropertiesAts(id=worksheet_values.spreadsheet_id) if is_ats else WorksheetPropertiesNonAts(id=worksheet_values.spreadsheet_id)
-  await post_row_dicts_to_spreadsheet(
-    ss_properties=ss_properties, row_dicts=worksheet_values.row_dicts,
-  )
-  
+   
   if new_sku_data is None:
+    await post_to_worksheet(
+      is_ats=is_ats, spreadsheet_id=worksheet_values.spreadsheet_id,
+      row_dicts=worksheet_values.row_dicts
+    )
     return
+  
+  ls_import_data = prepare_skus_for_lightspeed(new_sku_data=new_sku_data)
 
 def create_skus_ats(
   worksheet_values: SheetValues, po_id: int,
@@ -152,3 +154,40 @@ def create_new_ats_parent_sku() -> str:
   update_ats_settings(UpdateAtsSkuCreationSettings(sku_number=new_number))
 
   return f"{ats_settings.brand_code}-{pad_sku_number(str(new_number), zeros=8)}"
+
+def prepare_skus_for_lightspeed(new_sku_data: List[Dict[str, Any]]) -> List[ImportProduct]:
+  ls_upload: List[ImportProduct] = []
+
+  for row in new_sku_data:
+    sku = str(row["ProductID"])
+    mpn = str(row["MPN"])
+    color = str(row["Color"])
+    brand = str(row["Brand"])
+    description = str(row["Description"])
+    size = str(row["Size"])
+    msrp = str(row["Retail"])
+    item_type = str(row["Item Type"])
+
+    description = " ".join([sku, mpn, color, brand, description, "Size", size])
+
+    ls_data = {
+      "Description": description,
+      "Custom SKU": sku,
+      "Manufacturer SKU": mpn,
+      "Brand": brand,
+      "Default Cost": '',
+      "Default - Price": msrp,
+      "MSRP - Price": msrp,
+      "Category": item_type,
+    }
+
+    ls_upload.append(ImportProduct(**ls_data))
+
+  print(ls_upload)
+  return ls_upload
+
+async def post_to_worksheet(is_ats: bool, spreadsheet_id: str, row_dicts: List[Dict[str, Any]]):
+  ss_properties = WorksheetPropertiesAts(id=spreadsheet_id) if is_ats else WorksheetPropertiesNonAts(id=spreadsheet_id)
+  await post_row_dicts_to_spreadsheet(
+    ss_properties=ss_properties, row_dicts=row_dicts,
+  )
