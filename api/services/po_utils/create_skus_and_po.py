@@ -15,13 +15,16 @@ async def create_skus_and_po(po_id: int) -> None:
         detail="Could not find spreadsheet ID for Purchase Order.",
       )
 
-    add_log_to_purchase_order(
-      id=po_id, log=Log(user="Internal", message="Validating Worksheet data for PO.", type="log"),
+    worksheet_values = await validate_worksheet_for_po(
+      spreadsheet_id=spreadsheet_id, is_ats=po.is_ats, po_id=po_id,
     )
 
-    worksheet_values = await validate_worksheet_for_po(
-      spreadsheet_id=spreadsheet_id, is_ats=po.is_ats
-    )
+    if worksheet_values is None:
+      update_purchase_order(
+        id=po_id, updates=UpdatePurchaseOrder(status="Errors in worksheet (Create SKUs and PO)"),
+      )
+
+      return
 
     add_log_to_purchase_order(
       id=po_id, log=Log(

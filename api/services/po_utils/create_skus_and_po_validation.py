@@ -1,17 +1,36 @@
 from typing import List, Dict, Set
+from fastapi import HTTPException
 
 from api.services.cached_data.brand_codes import get_updated_brand_codes
 from api.services.cached_data.item_type_acronyms import get_updated_item_type_acronyms
 from api.services.cached_data.valid_sizes import get_updated_valid_sizes
 from api.services.google_api.sheets_utils import get_row_dicts_from_spreadsheet, post_row_dicts_to_spreadsheet
+from api.crud.purchase_orders import add_log_to_purchase_order
 from api.models.sheets import SheetValues, WorksheetProperties
+from api.models.purchase_orders import Log
 
 async def validate_worksheet_for_po(
-  spreadsheet_id: str, is_ats: bool,
+  spreadsheet_id: str, is_ats: bool, po_id: int,
 ) -> SheetValues | None:
-  worksheet_values = await get_row_dicts_from_spreadsheet(
-    ss_properties=WorksheetProperties(id=spreadsheet_id),
+  add_log_to_purchase_order(
+    id=po_id, log=Log(user="Internal", message="Validating Worksheet data for PO.", type="log"),
   )
+
+  try:
+    worksheet_values = await get_row_dicts_from_spreadsheet(
+      ss_properties=WorksheetProperties(id=spreadsheet_id),
+    )
+  except HTTPException as e:
+    if e.detail == "Sheet has no cell values in non-header rows.":
+      add_log_to_purchase_order(
+        id=po_id, log=Log(
+          user="Internal", message="Worksheet is empty.", type="error"
+        )
+      )
+      
+      return
+    else:
+      raise
 
   has_new_skus = not all(row["ProductID"] for row in worksheet_values.row_dicts)
   if has_new_skus:
@@ -57,7 +76,7 @@ async def validate_worksheet_for_po(
       error_msgs.append(validate_weighted_cost(weighted_cost=str(row["Weighted Cost"])))
       error_msgs.append(validate_group(group=str(row["Group"])))
 
-    error_msg_string = ". ".join(error_msgs)
+    error_msg_string = ". ".join(msg for msg in error_msgs if msg)
     row["Errors"] = error_msg_string
     if error_msg_string:
       has_errors = True
@@ -71,6 +90,13 @@ async def validate_worksheet_for_po(
       ss_properties=WorksheetProperties(id=spreadsheet_id),
       row_dicts=worksheet_values.row_dicts,
     )
+
+    add_log_to_purchase_order(
+      id=po_id, log=Log(
+        user="Internal", message="Errors found and posted to Worksheet.", type="error",
+      ),
+    )
+
     return
   
   else:

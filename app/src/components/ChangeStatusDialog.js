@@ -66,7 +66,7 @@ export default function ChangeStatusDialog({ row, addSnackbar, fetchPos }) {
             <MenuItem value="">Select Status</MenuItem>
             <MenuItem value="Worksheet Created">Worksheet Created</MenuItem>
             <MenuItem value="Breakdown Created">Breakdown Created</MenuItem>
-            <MenuItem value="Net Sales Created">Net Sales Created</MenuItem>
+            <MenuItem value="Net Sales Calculated">Net Sales Calculated</MenuItem>
             <MenuItem value="PO Created">PO Created</MenuItem>
             <MenuItem value="PO Received">PO Received</MenuItem>
             <MenuItem value="Internal Error">Internal Error</MenuItem>

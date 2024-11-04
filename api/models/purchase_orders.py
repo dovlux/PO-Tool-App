@@ -33,13 +33,13 @@ class PurchaseOrderOut(PurchaseOrderDB):
 
 class NewPurchaseOrderNonAts(FileCopyData):
   new_file_name: str
-  source_file_id: str = "1BUY7DhdLY0j443LJ6wh4YKWiBzH_qRD7yiw2tyxqcv0"
-  placement_folder_id: str = "1CqJLJQn_0KYLriFgqUTlsgO_qzCAkhKm"
+  source_file_id: str = "1cmFc3w0yJ76IzyBHZh2dQJ6xtP41XaokVd_GpwvrOLE"
+  placement_folder_id: str = "19XENhjGC9zouuPdXD50tc9rM8I6PzKHi"
 
 class NewPurchaseOrderAts(FileCopyData):
   new_file_name: str
-  source_file_id: str = "1Bw1osidVZlmZUFEtiXS6TE-XI-aHN_hXNrCqsZspJOo"
-  placement_folder_id: str = "1CqJLJQn_0KYLriFgqUTlsgO_qzCAkhKm"
+  source_file_id: str = "1qUePOnteM1rN4DhNbCdjyDhsvE8IJqqTcwKX14vWCDU"
+  placement_folder_id: str = "1YSxpBt-4naMhW6RJ5Ol_vSlCsHN4XXon"
 
 class UpdatePurchaseOrder(BaseModel):
   status: str | None = None
