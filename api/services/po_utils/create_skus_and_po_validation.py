@@ -6,6 +6,7 @@ from api.services.cached_data.item_type_acronyms import get_updated_item_type_ac
 from api.services.cached_data.valid_sizes import get_updated_valid_sizes
 from api.services.google_api.sheets_utils import get_row_dicts_from_spreadsheet, post_row_dicts_to_spreadsheet
 from api.crud.purchase_orders import add_log_to_purchase_order
+from api.services.utils.mpn_formatter import remove_special_chars
 from api.models.sheets import SheetValues, WorksheetProperties
 from api.models.purchase_orders import Log
 
@@ -44,36 +45,60 @@ async def validate_worksheet_for_po(
         mpn_color_dict[row["MPN"]] = []
       mpn_color_dict[row["MPN"]].append(row["Color"])
 
+    brand_mpn_description_item_type: Dict[str, Dict[str, str]] = {}
+    for row in worksheet_values.row_dicts:
+      brand_mpn_description_item_type[row["Brand"] + remove_special_chars(mpn=row["MPN"])] = {
+        "description": row["Description"],
+        "item_type": row["Item Type"],
+      }
+
   has_errors = False
 
   for row in worksheet_values.row_dicts:
     error_msgs: List[str] = []
 
-    if not row["ProductID"]:
+    if not row["ProductID"] or is_ats:
       error_msgs.append(
         validate_brand(
           brand=str(row["Brand"]), is_ats=is_ats, brand_codes=brand_codes # type: ignore
         )
       )
-      error_msgs.append(validate_description(description=str(row["Description"])))
+
+      mpn_removed_chars = remove_special_chars(mpn=row["MPN"])
+      matching_row_data = brand_mpn_description_item_type[row["Brand"] + mpn_removed_chars] # type: ignore
+      
       error_msgs.append(
-        validate_item_type(
-          item_type=str(row["Item Type"]), is_ats=is_ats, item_types=item_type_acronyms # type: ignore
+        validate_description(
+          description=str(row["Description"]), matching_description=matching_row_data["description"], # type: ignore
         )
       )
+
+      error_msgs.append(
+        validate_item_type(
+          item_type=str(row["Item Type"]), is_ats=is_ats,
+          item_types=item_type_acronyms, matching_item_type=matching_row_data["item_type"], # type: ignore
+        )
+      )
+
       error_msgs.append(validate_color(color=str(row["Color"]), mpn_colors=mpn_color_dict)) # type: ignore
+      
       error_msgs.append(
         validate_size(size=str(row["Size"]), is_ats=is_ats, valid_sizes=valid_sizes) # type: ignore
       )
+
       error_msgs.append(validate_mpn(mpn=str(row["MPN"])))
+      
       error_msgs.append(validate_retail(retail=str(row["Retail"])))
 
     error_msgs.append(validate_unit_cost(unit_cost=str(row["Unit Cost"])))
+    
     error_msgs.append(validate_qty(qty=str(row["Qty"])))
 
     if not is_ats:
       error_msgs.append(validate_unit_cost(unit_cost=str(row["Unit Cost (USD)"]), usd=True))
+      
       error_msgs.append(validate_weighted_cost(weighted_cost=str(row["Weighted Cost"])))
+      
       error_msgs.append(validate_group(group=str(row["Group"])))
 
     error_msg_string = ". ".join(msg for msg in error_msgs if msg)
@@ -109,16 +134,22 @@ def validate_brand(brand: str, is_ats: bool, brand_codes: Dict[str, str]) -> str
     return "Invalid Brand"
   return ""
 
-def validate_description(description: str) -> str:
+def validate_description(description: str, matching_description: str) -> str:
   if not description:
     return "Missing Description"
+  elif description != matching_description:
+    return "Different description found for same Brand & MPN on this sheet"
   return ""
 
-def validate_item_type(item_type: str, is_ats: bool, item_types: Dict[str, str]) -> str:
+def validate_item_type(
+  item_type: str, is_ats: bool, item_types: Dict[str, str], matching_item_type: str,
+) -> str:
   if not item_type:
     return "Missing Item Type"
   elif not is_ats and item_type not in item_types:
     return "Invalid Item Type"
+  elif item_type != matching_item_type:
+    return "Different item type found for same Brand & MPN on this sheet"
   return ""
 
 def validate_color(color: str, mpn_colors: Dict[str, List[str]]) -> str:

@@ -3,6 +3,7 @@ from fastapi import HTTPException, status
 from api.crud.purchase_orders import get_purchase_order
 from api.services.po_utils.create_skus_and_po_validation import validate_worksheet_for_po
 from api.crud.purchase_orders import add_log_to_purchase_order, update_purchase_order
+from api.services.po_utils.create_skus import create_or_find_skus
 from api.models.purchase_orders import UpdatePurchaseOrder, Log
 
 async def create_skus_and_po(po_id: int) -> None:
@@ -28,9 +29,13 @@ async def create_skus_and_po(po_id: int) -> None:
 
     add_log_to_purchase_order(
       id=po_id, log=Log(
-        user="Internal", message="Creating/Finding SKUs for all rows missing SKUs.", type="log"
+        user="Internal",
+        message=f"Creating{'/Finding SKUs' if not po.is_ats else ''} for all rows{' missing SKUs.' if not po.is_ats else ''}",
+        type="log",
       )
     )
+
+    await create_or_find_skus(worksheet_values=worksheet_values, po_id=po_id, is_ats=po.is_ats)
 
   except Exception as e:
     update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Internal Error"))

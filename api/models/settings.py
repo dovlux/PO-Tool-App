@@ -32,3 +32,10 @@ class LightspeedSettings(BaseModel):
   password: str
   server_ip: str
   port: str
+
+class AtsSkuCreationSettings(BaseModel):
+  brand_code: str
+  sku_number: int
+
+class UpdateAtsSkuCreationSettings(BaseModel):
+  sku_number: int
