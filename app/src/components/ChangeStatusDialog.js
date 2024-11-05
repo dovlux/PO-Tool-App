@@ -65,13 +65,9 @@ export default function ChangeStatusDialog({ row, addSnackbar, fetchPos }) {
           >
             <MenuItem value="">Select Status</MenuItem>
             <MenuItem value="Worksheet Created">Worksheet Created</MenuItem>
-            {( !row.is_ats ) && (
-              <>
-                <MenuItem value="Breakdown Created">Breakdown Created</MenuItem>
-                <MenuItem value="Net Sales Calculated">Net Sales Calculated</MenuItem>
-                <MenuItem value="PO Created">PO Created</MenuItem>
-              </>
-            )}
+            {(!row.is_ats) && (<MenuItem value="Breakdown Created">Breakdown Created</MenuItem>)}
+            {(!row.is_ats) && (<MenuItem value="Net Sales Calculated">Net Sales Calculated</MenuItem>)}
+            {(!row.is_ats) && (<MenuItem value="PO Created">PO Created</MenuItem>)}
             <MenuItem value="PO Received">PO Received</MenuItem>
             <MenuItem value="Internal Error">Internal Error</MenuItem>
           </Select>

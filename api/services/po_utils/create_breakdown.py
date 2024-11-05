@@ -177,11 +177,12 @@ async def create_breakdown(po_id: int) -> None:
       row_dicts=sorted_row_dicts,
     )
 
-    # Post relevant sales to relevant sales sheet
-    await sheets_utils.post_row_dicts_to_spreadsheet(
-      ss_properties=RelevantSalesProperties(id=worksheet_values.spreadsheet_id),
-      row_dicts=relevant_sales_rows,
-    )
+    # Post relevant sales to relevant sales sheet if they exist
+    if relevant_sales_rows:
+      await sheets_utils.post_row_dicts_to_spreadsheet(
+        ss_properties=RelevantSalesProperties(id=worksheet_values.spreadsheet_id),
+        row_dicts=relevant_sales_rows,
+      )
 
     # Post updated worksheet to worksheet
     await sheets_utils.post_row_dicts_to_spreadsheet(

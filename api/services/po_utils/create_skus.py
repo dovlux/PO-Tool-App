@@ -1,31 +1,92 @@
 from typing import List, Dict, Any, Set
+import asyncio
 
 from api.services.utils.get_aliases_dicts import get_aliases_dicts
-from api.crud.purchase_orders import add_log_to_purchase_order
+from api.crud.purchase_orders import add_log_to_purchase_order, update_purchase_order
 from api.services.utils.mpn_formatter import remove_special_chars
 from api.crud.settings import get_ats_settings, update_ats_settings
 from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet
-from api.models.purchase_orders import Log
+from api.services.lightspeed.upload_products_to_ls import upload_products_to_ls
+from api.services.sellercloud.skus import create_skus as sc_create_skus
+from api.services.sellercloud.jobs import set_job_priority_to_critical, get_job_information
+from api.services.sellercloud.base import get_token
+from api.crud.settings import get_sellercloud_settings
+from api.models.purchase_orders import Log, UpdatePurchaseOrder
 from api.models.lightspeed import ImportProduct
+from api.models.sellercloud import CreateProduct
 from api.models.sheets import SheetValues, WorksheetPropertiesAts, WorksheetPropertiesNonAts
 from api.models.settings import UpdateAtsSkuCreationSettings
 
 async def create_or_find_skus(
-  worksheet_values: SheetValues, po_id: int, is_ats: bool,
-) -> None:
+  worksheet_values: SheetValues, po_id: int, is_ats: bool, po_name: str,
+) -> bool:
   if is_ats:
     new_sku_data = create_skus_ats(worksheet_values=worksheet_values, po_id=po_id)
   else:
     new_sku_data = await create_or_find_skus_non_ats(worksheet_values=worksheet_values, po_id=po_id)
    
+  # If no new skus were found (should only apply for non-ats POs)
   if new_sku_data is None:
+    # Post updated worksheet rows to worksheet
     await post_to_worksheet(
       is_ats=is_ats, spreadsheet_id=worksheet_values.spreadsheet_id,
-      row_dicts=worksheet_values.row_dicts
+      row_dicts=worksheet_values.row_dicts,
     )
-    return
+    return True
   
+  # Prepare new sku data for upload to Lightspeed
   ls_import_data = prepare_skus_for_lightspeed(new_sku_data=new_sku_data)
+
+  # Upload products to lightspeed
+  ls_results = await upload_products_to_ls(po_id=po_id, products=ls_import_data, po_name=po_name)
+
+  # Create dict of skus to lightspeed system ids
+  sku_to_ls_system_id: Dict[str, str] = {}
+  for result in ls_results:
+    sku_to_ls_system_id[result.sku] = result.system_id
+
+  # Add LightSpeed Urls to worksheet data
+  for row in worksheet_values.row_dicts:
+    if row["ProductID"] in sku_to_ls_system_id:
+      row["LightSpeed Url"] = get_lightspeed_url(system_id=sku_to_ls_system_id[row["ProductID"]])
+
+  add_log_to_purchase_order(
+    id=po_id, log=Log(user="Internal", message="Uploading products to SellerCloud.", type="log"),
+  )
+
+  sc_import_data = prepare_skus_for_sellercloud(
+    ls_import_data=ls_import_data, sku_to_ls_system_id=sku_to_ls_system_id, is_ats=is_ats,
+  )
+
+  sc_settings = get_sellercloud_settings()
+  sc_token = await get_token(sc_settings=sc_settings)
+  company_id = sc_settings.ats_company_id if is_ats else sc_settings.default_company_id
+
+  sc_job_id = await sc_create_skus(token=sc_token, company_id=company_id, products=sc_import_data)
+  
+  try:
+    await set_job_priority_to_critical(token=sc_token, job_id=sc_job_id)
+  except Exception as e:
+    add_log_to_purchase_order(
+      id=po_id, log=Log(
+        user="Internal", message=f"Could not set priority to critical. {str(e)}", type="error",
+      )
+    )
+
+  add_log_to_purchase_order(
+    id=po_id, log=Log(user="Internal", message="Products uploaded to SellerCloud.", type="log"),
+  )
+
+  await post_to_worksheet(
+    is_ats=is_ats, spreadsheet_id=worksheet_values.spreadsheet_id,
+    row_dicts=worksheet_values.row_dicts,
+  )
+
+  # Post new products to Aliases/Created SKUs sheet
+
+  is_job_completed = await wait_for_job_to_finish(po_id=po_id, job_id=sc_job_id, token=sc_token)
+
+  return is_job_completed
 
 def create_skus_ats(
   worksheet_values: SheetValues, po_id: int,
@@ -183,7 +244,6 @@ def prepare_skus_for_lightspeed(new_sku_data: List[Dict[str, Any]]) -> List[Impo
 
     ls_upload.append(ImportProduct(**ls_data))
 
-  print(ls_upload)
   return ls_upload
 
 async def post_to_worksheet(is_ats: bool, spreadsheet_id: str, row_dicts: List[Dict[str, Any]]):
@@ -191,3 +251,82 @@ async def post_to_worksheet(is_ats: bool, spreadsheet_id: str, row_dicts: List[D
   await post_row_dicts_to_spreadsheet(
     ss_properties=ss_properties, row_dicts=row_dicts,
   )
+
+def get_lightspeed_url(system_id: str) -> str:
+  return f"https://us.merchantos.com/?name=item.listings.items&form_name=listing&description={system_id}"
+
+def prepare_skus_for_sellercloud(
+  ls_import_data: List[ImportProduct], sku_to_ls_system_id: Dict[str, str], is_ats: bool,
+) -> List[CreateProduct]:
+  skus_for_import: List[CreateProduct] = []
+
+  for row in ls_import_data:
+    product_import = CreateProduct(
+      ProductID=row.custom_sku, ProductName=row.Description, ManufacturerSKU=row.manufacturer_sku,
+      BrandName=row.Brand, ListPrice=row.default_price, WebsitePrice=row.default_price,
+      SitePrice=row.default_price, ProductTypeName=row.Category,
+      LIGHTSPEED_SYSTEM_ID=sku_to_ls_system_id[row.custom_sku],
+      UPC=add_check_digit_for_upc(upc=sku_to_ls_system_id[row.custom_sku]),
+      ASSIGN_TO_ATS=is_ats,
+    )
+
+    skus_for_import.append(product_import)
+
+  return skus_for_import
+
+def add_check_digit_for_upc(upc:str) -> str:
+  char_list = list(upc)[::-1]
+  total: int = 0
+
+  i = 1
+
+  for v in char_list:
+    number = int(v)
+    if i % 2 == 0:
+      total += number
+    else:
+      total += number * 3
+    i += 1
+
+  check_digit = (int((total + 9) / 10) * 10) - total
+
+  return upc + str(check_digit)
+
+async def wait_for_job_to_finish(
+  po_id: int, job_id: int, token: str, attempts: int = 10,
+) -> bool:
+  attempt: int = 1
+
+  while attempt <= attempts:
+    add_log_to_purchase_order(
+      id=po_id, log=Log(
+        user="Internal", message=f"Checking if job #{job_id} was completed.", type="log",
+      ),
+    )
+
+    job_info = await get_job_information(token=token, job_id=job_id)
+    status_code = int(job_info["Basic"]["Status"]) # type: ignore
+    is_completed = status_code == 3
+
+    if is_completed:
+      add_log_to_purchase_order(
+        id=po_id, log=Log(
+          user="Internal", message="SC Job was completed successfully.", type="log",
+        )
+      )
+
+      return True
+    else:
+      wait_time: int = 2 ** attempt
+      await asyncio.sleep(wait_time)
+      attempt += 1
+
+  add_log_to_purchase_order(
+    id=po_id, log=Log(
+      user="Internal", message="Max attempts reached and SC job was not completed.", type="error",
+    )
+  )
+
+  update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Internal Error"))
+
+  return False

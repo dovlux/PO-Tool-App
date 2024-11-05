@@ -56,7 +56,7 @@ export default function ActionRowButtons ({ row, addSnackbar, fetchPos }) {
       )}
       {(
         row.status === "Worksheet Created" || row.status === "Errors in worksheet (Breakdown)" ||
-        row.status === "Errors in worksheet (Create SKUs and PO)"
+        (row.is_ats === true && row.status === "Errors in worksheet (Create SKUs and PO)")
       ) && (
         <DeletePoDialog
           buttonLoading={buttonLoading}
@@ -70,7 +70,7 @@ export default function ActionRowButtons ({ row, addSnackbar, fetchPos }) {
         row.is_ats === false &&
         (
           row.status === "Breakdown Created" || row.status === "Errors in worksheet (Net Sales)" ||
-          row.status === "Net Sales Calculated"
+          row.status === "Net Sales Calculated" || row.status === "Errors in worksheet (Create SKUs and PO)"
         )
       ) && (
         <UndoDialog

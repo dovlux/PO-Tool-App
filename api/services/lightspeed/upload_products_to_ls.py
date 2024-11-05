@@ -2,17 +2,15 @@ from fastapi import HTTPException, status
 from typing import List
 
 from api.models.purchase_orders import Log
-from api.models.lightspeed import  ImportProduct
-from api.models.sheets import RowDicts
+from api.models.lightspeed import  ImportProduct, ProductResults
 from api.services.lightspeed.product_import import import_products
 from api.services.lightspeed.get_import_result import get_import_result
 from api.crud.purchase_orders import add_log_to_purchase_order
 from api.crud.settings import get_lightspeed_settings
 
 async def upload_products_to_ls(
-  po_id: int, products: List[ImportProduct], max_attempts: int = 5,
-) -> RowDicts:
-
+  po_id: int, products: List[ImportProduct], po_name: str, max_attempts: int = 5,
+) -> List[ProductResults]:
   ls_settings = get_lightspeed_settings()
 
   attempt: int = 1
@@ -28,14 +26,14 @@ async def upload_products_to_ls(
       )
       try:
         attempt += 1
-        results = await import_products(products=products, ls_settings=ls_settings)
+        results = await import_products(products=products, ls_settings=ls_settings, file_name=po_name)
         is_completed = results.completed
 
         if is_completed:
           add_log_to_purchase_order(
             id=po_id, log=Log(user="Internal", message="Product uploaded successfully (LS).", type="log"),
           )
-          return results.row_dicts
+          return results.results
         else:
           add_log_to_purchase_order(
             id=po_id, log=Log(
@@ -68,9 +66,9 @@ async def upload_products_to_ls(
 
         if is_completed:
           add_log_to_purchase_order(
-            id=po_id, log=Log(user="Internal", message="Product uploaded successfully (LS).", type="log"),
+            id=po_id, log=Log(user="Internal", message="Products uploaded successfully (LS).", type="log"),
           )
-          return results.row_dicts
+          return results.results
         else:
           add_log_to_purchase_order(
             id=po_id, log=Log(

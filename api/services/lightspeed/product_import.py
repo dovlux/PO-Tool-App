@@ -4,14 +4,13 @@ import pandas as pd
 from io import BytesIO
 import aiohttp
 
-from api.models.lightspeed import ImportProduct, ImportResults
-from api.models.sheets import RowDicts
+from api.models.lightspeed import ImportProduct, ImportResults, ProductResults
 from api.models.settings import LightspeedSettings
 from api.services.utils.csv_to_lists import csv_to_lists
 from api.services.google_api.sheets_utils import create_row_dicts
 
 async def import_products(
-  products: List[ImportProduct], ls_settings: LightspeedSettings,
+  products: List[ImportProduct], ls_settings: LightspeedSettings, file_name: str,
 ) -> ImportResults:
   try:
     df = pd.DataFrame([product.model_dump(by_alias=True) for product in products])
@@ -27,7 +26,7 @@ async def import_products(
 
     form_data = aiohttp.FormData()
     form_data.add_field(
-      "file", file_contents, filename="products.xlsx",
+      "file", file_contents, filename=file_name + ".xlsx",
       content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
@@ -58,7 +57,10 @@ async def import_products(
             actual_headers=results[0],
             rows=results[1:],
           )
-          return ImportResults(completed=True, row_dicts=RowDicts(row_dicts=row_dicts))
+          final_row_dicts = [
+            ProductResults(system_id=row["System ID"], sku=row["Custom SKU"]) for row in row_dicts
+          ]
+          return ImportResults(completed=True, results=final_row_dicts)
 
   except Exception as e:
     raise HTTPException(

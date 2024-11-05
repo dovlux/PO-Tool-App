@@ -12,8 +12,8 @@ async def get_aliases_dicts() -> Dict[str, Dict[str, List[str]]]:
   brand_type_dict: Dict[str, List[str]] = {}
 
   for row in aliases_sheet_values.row_dicts:
-    old_sku = row["Old Custom SKU"]
-    mpn = row["MPN"]
+    old_sku = str(row["Old Custom SKU"])
+    mpn = str(row["MPN"])
 
     brand_code = get_brand_code(sku=old_sku)
     formatted_mpn = remove_special_chars(mpn=mpn)
