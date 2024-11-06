@@ -1,7 +1,8 @@
 import React, { Fragment, useState } from "react";
 import {
   Button, TextField, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-  CircularProgress, FormControlLabel, Checkbox, FormControl, InputLabel, Select, MenuItem
+  CircularProgress, FormControlLabel, Checkbox, FormControl, InputLabel, Select, MenuItem,
+  Stack
 } from '@mui/material';
 import sendRequest from '../utils/sendRequest'
 
@@ -9,12 +10,12 @@ export default function CreatePoDialog({ addSnackbar, fetchPos }) {
   const [open, setOpen] = useState(false);
   const [loadingCreate, setLoadingCreate] = useState(false);
   const [isAts, setIsAts] = useState(false);
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState("");
 
   const handleOpen = () => {
     setOpen(true);
     setIsAts(false);
-    setCurrency("USD");
+    setCurrency("");
   };
 
   const handleClose = () => {
@@ -70,18 +71,30 @@ export default function CreatePoDialog({ addSnackbar, fetchPos }) {
             fullWidth
             variant="standard"
           />
-          <div></div>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={isAts} 
-                onChange={(e) => setIsAts(e.target.checked)}
-                name="is_ats"
-                color="primary"
-              />
-            }
-            label="ATS"
-          />
+          <Stack direction="row">
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={!isAts} 
+                  onChange={(e) => setIsAts(!e.target.checked)}
+                  name="is_lux"
+                  color="primary"
+                />
+              }
+              label="LUX"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={isAts} 
+                  onChange={(e) => setIsAts(e.target.checked)}
+                  name="is_ats"
+                  color="primary"
+                />
+              }
+              label="ATS"
+            />
+          </Stack>
           <FormControl fullWidth variant="standard" margin="dense">
             <InputLabel id="currency-label">Currency</InputLabel>
             <Select
@@ -100,7 +113,7 @@ export default function CreatePoDialog({ addSnackbar, fetchPos }) {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} disabled={loadingCreate}>Cancel</Button>
-          <Button type="submit" disabled={loadingCreate}>
+          <Button type="submit" disabled={loadingCreate || currency === ''}>
             {loadingCreate ? <CircularProgress size={24} /> : 'Submit'}
           </Button>
         </DialogActions>

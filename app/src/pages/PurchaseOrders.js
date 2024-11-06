@@ -83,7 +83,7 @@ const PurchaseOrders = ({ addSnackbar, setLoading }) => {
         row={params.row} addSnackbar={addSnackbar} fetchPos={fetchPos}
       />
     },
-    { field: 'spreadsheet_id', headerName: 'GS', width: 50, sortable: false, renderCell: (params) => {
+    { field: 'spreadsheet_id', headerName: 'GS', headerAlign: 'center', width: 50, sortable: false, renderCell: (params) => {
         if (!params.value) {
           return null;
         }
@@ -100,7 +100,7 @@ const PurchaseOrders = ({ addSnackbar, setLoading }) => {
         );
       }
     },
-    { field: 'po_id', headerName: 'SC', width: 50, sortable: false, renderCell: (params) => {
+    { field: 'po_id', headerName: 'SC', headerAlign: 'center', width: 50, sortable: false, renderCell: (params) => {
         if (!params.value) {
           return null;
         }

@@ -33,7 +33,6 @@ async def get_aliases_dicts() -> Dict[str, Dict[str, List[str]]]:
     "brand_type_dict": brand_type_dict,
   }
 
-
 async def get_aliases_values(retries: int = 5) -> SheetValues:
   attempt: int = 0
   aliases_values = SheetValues(headers=[], row_dicts=[], spreadsheet_id="")
