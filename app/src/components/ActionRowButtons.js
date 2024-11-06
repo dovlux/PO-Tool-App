@@ -50,6 +50,7 @@ export default function ActionRowButtons ({ row, addSnackbar, fetchPos }) {
           buttonLoading={buttonLoading}
           setButtonLoading={setButtonLoading}
           id={row.id}
+          isAts={row.is_ats}
           addSnackbar={addSnackbar}
           fetchPos={fetchPos}
         />

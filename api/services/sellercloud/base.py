@@ -1,5 +1,5 @@
 import httpx
-from typing import Literal, Dict, Any
+from typing import Literal, Dict, Any, List
 from fastapi import HTTPException, status
 
 from api.models.settings import SellercloudSettings
@@ -8,7 +8,7 @@ url_header = "https://lux.api.sellercloud.com/rest/api/"
 
 async def sellercloud_api_call(
   method: Literal["get", "post", "put", "delete"],
-  endpoint: str, token: str, body: Dict[str, Any] | None = None,
+  endpoint: str, token: str, body: Dict[str, Any] | List[Any] | None = None,
 ) -> Any | None:
   headers = { "Authorization": f"Bearer {token}"}
   url = url_header + endpoint

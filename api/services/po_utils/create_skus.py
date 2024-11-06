@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Set
 import asyncio
+from fastapi import HTTPException, status
 
 from api.services.utils.get_aliases_dicts import get_aliases_dicts
 from api.crud.purchase_orders import add_log_to_purchase_order, update_purchase_order
@@ -9,8 +10,6 @@ from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet
 from api.services.lightspeed.upload_products_to_ls import upload_products_to_ls
 from api.services.sellercloud.skus import create_skus as sc_create_skus
 from api.services.sellercloud.jobs import set_job_priority_to_critical, get_job_information
-from api.services.sellercloud.base import get_token
-from api.crud.settings import get_sellercloud_settings
 from api.models.purchase_orders import Log, UpdatePurchaseOrder
 from api.models.lightspeed import ImportProduct
 from api.models.sellercloud import CreateProduct
@@ -19,7 +18,8 @@ from api.models.settings import UpdateAtsSkuCreationSettings
 
 async def create_or_find_skus(
   worksheet_values: SheetValues, po_id: int, is_ats: bool, po_name: str,
-) -> bool:
+  sc_token: str, company_id: int,
+) -> None:
   if is_ats:
     new_sku_data = create_skus_ats(worksheet_values=worksheet_values, po_id=po_id)
   else:
@@ -32,7 +32,7 @@ async def create_or_find_skus(
       is_ats=is_ats, spreadsheet_id=worksheet_values.spreadsheet_id,
       row_dicts=worksheet_values.row_dicts,
     )
-    return True
+    return
   
   # Prepare new sku data for upload to Lightspeed
   ls_import_data = prepare_skus_for_lightspeed(new_sku_data=new_sku_data)
@@ -58,10 +58,6 @@ async def create_or_find_skus(
     ls_import_data=ls_import_data, sku_to_ls_system_id=sku_to_ls_system_id, is_ats=is_ats,
   )
 
-  sc_settings = get_sellercloud_settings()
-  sc_token = await get_token(sc_settings=sc_settings)
-  company_id = sc_settings.ats_company_id if is_ats else sc_settings.default_company_id
-
   sc_job_id = await sc_create_skus(token=sc_token, company_id=company_id, products=sc_import_data)
   
   try:
@@ -86,7 +82,11 @@ async def create_or_find_skus(
 
   is_job_completed = await wait_for_job_to_finish(po_id=po_id, job_id=sc_job_id, token=sc_token)
 
-  return is_job_completed
+  if not is_job_completed:
+    raise HTTPException(
+      status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+      detail="Timed out while waiting for SKU creation job to finish.",
+    )
 
 def create_skus_ats(
   worksheet_values: SheetValues, po_id: int,

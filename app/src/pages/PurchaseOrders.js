@@ -5,6 +5,7 @@ import CreatePoDialog from '../components/CreatePoDialog';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import sendRequest from '../utils/sendRequest';
 import { ReactComponent as GoogleSheetsIcon } from '../icons/google-sheets-icon.svg';
+import { ReactComponent as SellerCloudIcon } from '../icons/sellercloud-icon.svg';
 import ActionRowButtons from "../components/ActionRowButtons";
 import DevRowButtons from '../components/DevRowButtons';
 
@@ -82,7 +83,7 @@ const PurchaseOrders = ({ addSnackbar, setLoading }) => {
         row={params.row} addSnackbar={addSnackbar} fetchPos={fetchPos}
       />
     },
-    { field: 'spreadsheet_id', headerName: '', width: 70, sortable: false, renderCell: (params) => {
+    { field: 'spreadsheet_id', headerName: 'GS', width: 50, sortable: false, renderCell: (params) => {
         if (!params.value) {
           return null;
         }
@@ -95,6 +96,23 @@ const PurchaseOrders = ({ addSnackbar, setLoading }) => {
             aria-label="open google sheet"
           >
             <GoogleSheetsIcon style={{ height: '24px', width: '24px' }} />
+          </IconButton>
+        );
+      }
+    },
+    { field: 'po_id', headerName: 'SC', width: 50, sortable: false, renderCell: (params) => {
+        if (!params.value) {
+          return null;
+        }
+        return (
+          <IconButton
+            component="a"
+            href={'https://lux.delta.sellercloud.com/purchasing/po-details.aspx?id=' + params.value}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="open purchase order"
+          >
+            <SellerCloudIcon style={{ height: '24px', width: '24px' }} />
           </IconButton>
         );
       }

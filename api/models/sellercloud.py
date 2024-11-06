@@ -14,3 +14,12 @@ class CreateProduct(BaseModel):
   LIGHTSPEED_SYSTEM_ID: str
   UPC: str
   ASSIGN_TO_ATS: bool
+
+class PoAddProduct(BaseModel):
+  ProductID: str
+  QtyUnitsOrdered: int
+  UnitPrice: float
+
+class PoReceiveProduct(BaseModel):
+  ID: str
+  QtyToReceive: int

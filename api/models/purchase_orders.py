@@ -27,6 +27,7 @@ class PurchaseOrderDB(PurchaseOrderIn):
   spreadsheet_id: str | None = None
   additional_fees: AdditionalFees | None = None
   currency_conversion: float = 1
+  po_id: int | None = None
 
 class PurchaseOrderOut(PurchaseOrderDB):
   id: int
@@ -45,9 +46,13 @@ class UpdatePurchaseOrder(BaseModel):
   status: str | None = None
   spreadsheet_id: str | None = None
   additional_fees: AdditionalFees | None = None
+  po_id: int | None = None
 
 class UndoPurchaseOrderStatus(BaseModel):
   status: str
 
 class UpdatePurchaseOrderLog(BaseModel):
   logs: List[Log]
+
+class UpdatePurchaseOrderPoId(BaseModel):
+  po_id: int
