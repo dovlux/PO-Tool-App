@@ -2,6 +2,7 @@ from typing import List, Dict
 
 from api.crud.purchase_orders import add_log_to_purchase_order, update_purchase_order
 from api.services.google_api.sheets_utils import get_row_dicts_from_spreadsheet, post_row_dicts_to_spreadsheet 
+from api.services.utils.send_emails import send_error_email
 from api.models.sheets import BreakdownProperties
 from api.models.purchase_orders import Log, UpdatePurchaseOrder, PurchaseOrderOut
 from api.models.sheets import SheetValues, RowDicts
@@ -32,6 +33,7 @@ async def validate_for_net_sales(
         id=po.id, log=Log(user="Internal", message=f"Failed to retrieve totals. Error: {str(e)}", type="error")
       )
       update_purchase_order(id=po.id, updates=UpdatePurchaseOrder(status="Internal Error"))
+      await send_error_email(subject=f"PO #{po.id} Net Sales Error", error_message=str(e))
       return
 
     # Get values and rows from Breakdown sheet
@@ -130,6 +132,8 @@ async def validate_for_net_sales(
     add_log_to_purchase_order(
       id=po.id, log=Log(user="Internal", message=str(e), type="error")
     )
+
+    await send_error_email(subject=f"PO #{po.id} Net Sales Error", error_message=str(e))
 
 async def get_total_costs_and_msrps(worksheet_rows: RowDicts) -> Dict[str, Dict[str, float]]:
   group_totals: Dict[str, Dict[str, float]] = {}

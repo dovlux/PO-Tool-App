@@ -7,6 +7,7 @@ from api.models.purchase_orders import UpdatePurchaseOrder, Log
 from api.crud.purchase_orders import get_purchase_order, update_purchase_order, add_log_to_purchase_order
 from api.services.google_api import sheets_utils
 from api.services.cached_data.item_types import get_updated_item_types_rows
+from api.services.utils.send_emails import send_error_email
 
 class ValidationData(BaseModel):
   brands: List[str]
@@ -128,6 +129,8 @@ async def validate_worksheet_for_breakdown(po_id: int) -> SheetValues | None:
     add_log_to_purchase_order(
       id=po_id, log=Log(user="Internal", message=str(e), type="error")
     )
+
+    await send_error_email(subject=f"PO #{po_id} Breakdown Error", error_message=str(e))
 
 async def get_validation_data(worksheet_id: str) -> ValidationData:
   # Retrieve validation data from validation sheet in PO worksheet.

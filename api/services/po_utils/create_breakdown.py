@@ -6,6 +6,7 @@ from api.services.po_utils.breakdown_validation import validate_worksheet_for_br
 from api.services.cached_data.sales_reports import get_updated_sales_reports_rows
 from api.services.cached_data.marketplaces import get_updated_marketplaces_to_groups
 from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_order, get_purchase_order
+from api.services.utils.send_emails import send_error_email
 from api.models.sheets import RelevantSalesProperties, WorksheetPropertiesNonAts, RowDicts, BreakdownProperties
 from api.services.google_api import sheets_utils
 from api.models.purchase_orders import UpdatePurchaseOrder, Log
@@ -202,3 +203,5 @@ async def create_breakdown(po_id: int) -> None:
     add_log_to_purchase_order(
       id=po_id, log=Log(user="Internal", message=str(e), type="error")
     )
+
+    await send_error_email(subject=f"PO #{po_id} Breakdown Error", error_message=str(e))

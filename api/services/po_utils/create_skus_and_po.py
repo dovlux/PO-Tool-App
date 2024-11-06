@@ -11,6 +11,7 @@ from api.services.sellercloud.base import get_token
 from api.services.sellercloud.skus import check_if_skus_exist
 from api.services.sellercloud.purchase_orders import add_items_to_purchase_order
 from api.services.utils.purchase_orders import create_and_receive_purchase_order
+from api.services.utils.send_emails import send_error_email
 from api.models.purchase_orders import UpdatePurchaseOrder, Log
 from api.models.sellercloud import PoAddProduct
 from api.models.sheets import WorksheetPropertiesAts, WorksheetPropertiesNonAts
@@ -143,4 +144,6 @@ async def create_skus_and_po(po_id: int) -> None:
     add_log_to_purchase_order(
       id=po_id, log=Log(user="Internal", message=str(e), type="error"),
     )
+
+    await send_error_email(subject=f"PO #{po_id} Create SKUs/PO Error", error_message=str(e))
   

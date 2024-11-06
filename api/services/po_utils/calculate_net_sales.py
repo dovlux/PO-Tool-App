@@ -6,6 +6,7 @@ from api.crud.settings import get_breakdown_net_sales_settings
 from api.crud.purchase_orders import update_purchase_order, add_log_to_purchase_order, get_purchase_order
 from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet, get_row_dicts_from_spreadsheet
 from api.services.google_api.sheets import post_values
+from api.services.utils.send_emails import send_error_email
 from api.models.purchase_orders import Log, UpdatePurchaseOrder
 from api.models.sheets import BreakdownProperties, WorksheetPropertiesNonAts, RowDicts, ValidationProperties
 from api.models.settings import BreakdownNetSalesSettings
@@ -101,6 +102,8 @@ async def calculate_net_sales(po_id: int):
     )
 
     update_purchase_order(id=po_id, updates=UpdatePurchaseOrder(status="Internal Error"))
+
+    await send_error_email(subject=f"PO #{po_id} Net Sales Error", error_message=str(e))
 
 def add_gross_net_and_fees(
   breakdown_rows: List[Dict[str, Any]], current_settings: BreakdownNetSalesSettings,
