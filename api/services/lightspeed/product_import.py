@@ -58,7 +58,10 @@ async def import_products(
             rows=results[1:],
           )
           final_row_dicts = [
-            ProductResults(system_id=row["System ID"], sku=row["Custom SKU"]) for row in row_dicts
+            ProductResults(
+              system_id=row["System ID"],
+              sku=row["Custom SKU"],
+            ) for row in row_dicts
           ]
           return ImportResults(completed=True, results=final_row_dicts)
 

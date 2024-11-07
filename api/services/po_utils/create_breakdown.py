@@ -119,7 +119,7 @@ async def create_breakdown(po_id: int) -> None:
         else:
           marketplace_data["market_share"] = 0 if not sales else round(sales / total_sales, 2)
         market_share += marketplace_data["market_share"]
-        marketplace_data["discount"] = round(1 - (0 if not sales else sales / msrp), 2)
+        marketplace_data["discount"] = round(1 - (1 if not sales else sales / msrp), 2)
 
       # Ensure sum of market share equals 1
       if market_share != 1:

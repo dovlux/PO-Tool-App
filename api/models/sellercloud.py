@@ -8,6 +8,7 @@ class CreateProduct(BaseModel):
   ListPrice: str
   WebsitePrice: str
   SitePrice: str
+  BuyItNowPrice: str
   ProductTypeName: str
   SiteCost: str = ""
   LightspeedPOSEnabled: str = "TRUE"

@@ -47,7 +47,7 @@ const Developer = ({ setLoading, addSnackbar }) => {
     {
       field: 'update',
       headerName: 'Update',
-      width: 200,
+      width: 100,
       sortable: false,
       headerAlign: 'center',
       renderCell: (params) => (
@@ -85,7 +85,7 @@ const Developer = ({ setLoading, addSnackbar }) => {
   }, [fetchCacheStatus]);
 
   return (
-    <Box width='50%' height='25%' border={1} sx={{ overflow: 'hidden', overflowY: 'auto' }}>
+    <Box width='40%' height='25%' border={1} sx={{ overflow: 'hidden', overflowY: 'auto' }}>
       <DevHeader fetchCacheStatus={fetchCacheStatus} />
       <DataTable rows={cacheRows} columns={cacheColumns} />
     </Box>

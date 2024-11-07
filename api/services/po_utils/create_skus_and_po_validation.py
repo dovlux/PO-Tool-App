@@ -421,6 +421,7 @@ async def validate_group_totals(
       "cost": float(row["Total Cost"]),
       "msrp": float(row["Total MSRP"]),
       "weighted_cost": float(row["Weighted Cost"]),
+      "ecom_discount": float(row["Ecom Start Discount"]),
     }
 
   for row in worksheet_values.row_dicts:
@@ -440,6 +441,8 @@ async def validate_group_totals(
         error_msgs.append("Retail totals for this group does not match total MSRP in breakdown")
       if current_group_totals["weighted_cost"] != matching_totals["weighted_cost"]:
         error_msgs.append("Weighted Cost totals for this group does not match breakdown totals")
+
+      row["SitePrice"] = round(float(row["Retail"]) * (1 - matching_totals["ecom_discount"]), 2)
 
     error_msg_string = ". ".join(msg for msg in error_msgs if msg)
     row["Errors"] = error_msg_string

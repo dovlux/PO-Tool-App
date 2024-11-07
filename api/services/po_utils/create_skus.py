@@ -4,8 +4,8 @@ from fastapi import HTTPException, status
 
 from api.services.utils.get_aliases_dicts import get_aliases_dicts
 from api.crud.purchase_orders import add_log_to_purchase_order, update_purchase_order
-from api.services.utils.mpn_formatter import remove_special_chars
-from api.crud.settings import get_ats_settings, update_ats_settings
+from api.services.utils.mpn_formatter import remove_special_chars, format_mpn
+from api.crud.settings import get_ats_settings, update_ats_settings, get_ebay_discount_settings
 from api.services.google_api.sheets_utils import post_row_dicts_to_spreadsheet
 from api.services.lightspeed.upload_products_to_ls import upload_products_to_ls
 from api.services.sellercloud.skus import create_skus as sc_create_skus
@@ -45,17 +45,15 @@ async def create_or_find_skus(
   for result in ls_results:
     sku_to_ls_system_id[result.sku] = result.system_id
 
-  # Add LightSpeed Urls to worksheet data
-  for row in worksheet_values.row_dicts:
-    if row["ProductID"] in sku_to_ls_system_id:
-      row["LightSpeed Url"] = get_lightspeed_url(system_id=sku_to_ls_system_id[row["ProductID"]])
-
   add_log_to_purchase_order(
     id=po_id, log=Log(user="Internal", message="Uploading products to SellerCloud.", type="log"),
   )
 
   sc_import_data = prepare_skus_for_sellercloud(
-    ls_import_data=ls_import_data, sku_to_ls_system_id=sku_to_ls_system_id, is_ats=is_ats,
+    worksheet_values=worksheet_values,
+    ls_import_data=ls_import_data,
+    sku_to_ls_system_id=sku_to_ls_system_id,
+    is_ats=is_ats,
   )
 
   sc_job_id = await sc_create_skus(token=sc_token, company_id=company_id, products=sc_import_data)
@@ -221,7 +219,7 @@ def prepare_skus_for_lightspeed(new_sku_data: List[Dict[str, Any]]) -> List[Impo
 
   for row in new_sku_data:
     sku = str(row["ProductID"])
-    mpn = str(row["MPN"])
+    mpn = format_mpn(str(row["MPN"]))
     color = str(row["Color"])
     brand = str(row["Brand"])
     description = str(row["Description"])
@@ -256,21 +254,39 @@ def get_lightspeed_url(system_id: str) -> str:
   return f"https://us.merchantos.com/?name=item.listings.items&form_name=listing&description={system_id}"
 
 def prepare_skus_for_sellercloud(
-  ls_import_data: List[ImportProduct], sku_to_ls_system_id: Dict[str, str], is_ats: bool,
+  worksheet_values: SheetValues,
+  ls_import_data: List[ImportProduct],
+  sku_to_ls_system_id: Dict[str, str],
+  is_ats: bool,
 ) -> List[CreateProduct]:
+  ls_sku_data = {data.custom_sku: data for data in ls_import_data}
+
+  ebay_settings = get_ebay_discount_settings()
+  ebay_discount = ebay_settings.discount
+
   skus_for_import: List[CreateProduct] = []
 
-  for row in ls_import_data:
+  for row in worksheet_values.row_dicts:
+    sku = str(row["ProductID"])
+    ls_data = ls_sku_data[sku]
     product_import = CreateProduct(
-      ProductID=row.custom_sku, ProductName=row.Description, ManufacturerSKU=row.manufacturer_sku,
-      BrandName=row.Brand, ListPrice=row.default_price, WebsitePrice=row.default_price,
-      SitePrice=row.default_price, ProductTypeName=row.Category,
-      LIGHTSPEED_SYSTEM_ID=sku_to_ls_system_id[row.custom_sku],
-      UPC=add_check_digit_for_upc(upc=sku_to_ls_system_id[row.custom_sku]),
+      ProductID=sku,
+      ProductName=ls_data.Description,
+      ManufacturerSKU=ls_data.manufacturer_sku,
+      BrandName=ls_data.Brand,
+      ListPrice=ls_data.default_price,
+      WebsitePrice=ls_data.default_price if is_ats else str(row["SitePrice"]),
+      SitePrice=ls_data.default_price if is_ats else str(row["SitePrice"]),
+      BuyItNowPrice=str(round(float(ls_data.default_price if is_ats else row["SitePrice"]) * (1 - ebay_discount), 2)),
+      ProductTypeName=ls_data.Category,
+      LIGHTSPEED_SYSTEM_ID=sku_to_ls_system_id[sku],
+      UPC=add_check_digit_for_upc(upc=sku_to_ls_system_id[sku]),
       ASSIGN_TO_ATS=is_ats,
     )
 
     skus_for_import.append(product_import)
+
+    row["MPN"] = ls_data.manufacturer_sku
 
   return skus_for_import
 

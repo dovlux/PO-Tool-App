@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button, CircularProgress, Stack } from "@mui/material";
+import UpdateIcon from '@mui/icons-material/Update';
 import sendRequest from "../utils/sendRequest";
 
 export default function UpdateCacheButton({ row, fetchCacheStatus, addSnackbar }) {
@@ -24,12 +25,10 @@ export default function UpdateCacheButton({ row, fetchCacheStatus, addSnackbar }
     (row.status !== "Updating...") &&
     <Stack alignContent='center' m={1}>
       <Button
-        variant="contained"
-        color="primary"
         disabled={updatingCache}
         onClick={() => updateCache(row.name.replace("_", "-"))}
       >
-        {updatingCache ? <CircularProgress size={24} /> : 'Update'}
+        {updatingCache ? <CircularProgress size={24} /> : <UpdateIcon color="primary" />}
       </Button>
     </Stack>
   )

@@ -39,3 +39,6 @@ class AtsSkuCreationSettings(BaseModel):
 
 class UpdateAtsSkuCreationSettings(BaseModel):
   sku_number: int
+
+class EbayDiscountSettings(BaseModel):
+  discount: float
