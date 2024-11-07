@@ -62,24 +62,13 @@ const PurchaseOrders = ({ addSnackbar, setLoading }) => {
       valueGetter: (value) => new Date(JSON.parse(value)),
     },
     { field: 'status', headerName: 'Status', width: 300 },
-    { field: 'currency', headerName: 'Currency', width: 100 },
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 300,
+      width: 150,
       sortable: false,
       headerAlign: 'center',
       renderCell: (params) => <ActionRowButtons
-        row={params.row} addSnackbar={addSnackbar} fetchPos={fetchPos}
-      />
-    },
-    {
-      field: 'dev',
-      headerName: 'Dev Tools',
-      width: 300,
-      sortable: false,
-      headerAlign: 'center',
-      renderCell: (params) => <DevRowButtons
         row={params.row} addSnackbar={addSnackbar} fetchPos={fetchPos}
       />
     },
@@ -116,7 +105,17 @@ const PurchaseOrders = ({ addSnackbar, setLoading }) => {
           </IconButton>
         );
       }
-    }
+    },
+    {
+      field: 'dev',
+      headerName: 'Dev Tools',
+      width: 150,
+      sortable: false,
+      headerAlign: 'center',
+      renderCell: (params) => <DevRowButtons
+        row={params.row} addSnackbar={addSnackbar} fetchPos={fetchPos}
+      />
+    },
   ], [addSnackbar, fetchPos]);
 
   const getPurchaseOrders = async () => {

@@ -4,6 +4,7 @@ import {
   CircularProgress, FormControlLabel, Checkbox, FormControl, InputLabel, Select, MenuItem,
   Stack
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import sendRequest from '../utils/sendRequest'
 
 export default function CreatePoDialog({ addSnackbar, fetchPos }) {
@@ -40,8 +41,8 @@ export default function CreatePoDialog({ addSnackbar, fetchPos }) {
 
   return (
     <Fragment>
-      <Button variant="contained" onClick={handleOpen}>
-        Create Purchase Order
+      <Button onClick={handleOpen}>
+        <AddIcon color="inherit" />
       </Button>
       <Dialog
         open={open}

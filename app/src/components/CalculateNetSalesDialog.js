@@ -3,6 +3,7 @@ import {
   Button, CircularProgress, Dialog, DialogTitle, DialogContent, DialogContentText,
   TextField, DialogActions
 } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import sendRequest from '../utils/sendRequest'
 
 export default function CalculateNetSalesDialog({ id, addSnackbar, fetchPos }) {
@@ -72,8 +73,8 @@ export default function CalculateNetSalesDialog({ id, addSnackbar, fetchPos }) {
 
   return (
     <>
-      <Button variant="contained" color="success" onClick={handleOpen}>
-        Calculate Net Sales
+      <Button onClick={handleOpen}>
+        <PlayArrowIcon color="success" />
       </Button>
       <Dialog
         open={open}

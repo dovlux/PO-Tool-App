@@ -3,6 +3,7 @@ import {
   Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
   CircularProgress,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import sendRequest from '../utils/sendRequest'
 
 export default function DeletePoDialog({ buttonLoading, setButtonLoading, id, addSnackbar, fetchPos }) {
@@ -38,12 +39,10 @@ export default function DeletePoDialog({ buttonLoading, setButtonLoading, id, ad
   return (
     <Fragment>
       <Button
-        variant="contained"
-        color="error"
         disabled={buttonLoading}
         onClick={handleOpen}
       >
-        {loadingDelete ? <CircularProgress size={24} /> : 'Delete'}
+        {loadingDelete ? <CircularProgress size={24} /> : <DeleteIcon color='error' />}
       </Button>
       <Dialog
         open={open}

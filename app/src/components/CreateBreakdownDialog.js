@@ -3,6 +3,7 @@ import {
   Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
   CircularProgress,
 } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import sendRequest from '../utils/sendRequest'
 
 export default function CreateBreakdownDialog({ buttonLoading, setButtonLoading, id, addSnackbar, fetchPos }) {
@@ -38,12 +39,10 @@ export default function CreateBreakdownDialog({ buttonLoading, setButtonLoading,
   return (
     <Fragment>
       <Button
-        variant="contained"
-        color="success"
         disabled={buttonLoading}
         onClick={handleOpen}
       >
-        {loadingBreakdown ? <CircularProgress size={24} /> : 'Create Breakdown'}
+        {loadingBreakdown ? <CircularProgress size={24} /> : <PlayArrowIcon color="success" />}
       </Button>
       <Dialog
         open={open}

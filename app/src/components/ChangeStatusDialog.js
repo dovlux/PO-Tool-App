@@ -4,6 +4,7 @@ import {
   CircularProgress, Select,
   MenuItem,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import sendRequest from '../utils/sendRequest'
 
 export default function ChangeStatusDialog({ row, addSnackbar, fetchPos }) {
@@ -40,12 +41,8 @@ export default function ChangeStatusDialog({ row, addSnackbar, fetchPos }) {
 
   return (
     <Fragment>
-      <Button
-        variant="contained"
-        color="secondary"
-        onClick={handleOpen}
-      >
-        Change Status
+      <Button onClick={handleOpen} >
+        <EditIcon color="secondary" />
       </Button>
       <Dialog
         open={open}

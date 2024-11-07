@@ -3,6 +3,7 @@ import {
   Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
   CircularProgress,
 } from '@mui/material';
+import UndoIcon from '@mui/icons-material/Undo';
 import sendRequest from '../utils/sendRequest'
 
 export default function UndoDialog({ buttonLoading, setButtonLoading, id, status, addSnackbar, fetchPos }) {
@@ -38,12 +39,10 @@ export default function UndoDialog({ buttonLoading, setButtonLoading, id, status
   return (
     <Fragment>
       <Button
-        variant="contained"
-        color="secondary"
         disabled={buttonLoading}
         onClick={handleOpen}
       >
-        {loadingUndo ? <CircularProgress size={24} /> : 'Undo'}
+        {loadingUndo ? <CircularProgress size={24} /> : <UndoIcon color="primary" />}
       </Button>
       <Dialog
         open={open}

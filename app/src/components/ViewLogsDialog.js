@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import {
   Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack
 } from '@mui/material';
+import LogoDevIcon from '@mui/icons-material/LogoDev';
 import DataTable from "./DataTable";
 
 export default function ViewLogsDialog({ row }) {
@@ -30,12 +31,8 @@ export default function ViewLogsDialog({ row }) {
 
   return (
     <Stack direction='row' alignContent='center' spacing={1} m={1}>
-      <Button
-        variant="contained"
-        color="secondary"
-        onClick={handleOpen}
-      >
-        View Logs
+      <Button onClick={handleOpen} >
+        <LogoDevIcon color="secondary" />
       </Button>
       <Dialog
         open={open}

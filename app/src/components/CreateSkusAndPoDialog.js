@@ -4,6 +4,7 @@ import {
   CircularProgress,
   TextField,
 } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import sendRequest from '../utils/sendRequest'
 
 export default function CreateSkusAndPoDialog({ buttonLoading, setButtonLoading, id, isAts, addSnackbar, fetchPos }) {
@@ -58,12 +59,10 @@ export default function CreateSkusAndPoDialog({ buttonLoading, setButtonLoading,
   return (
     <Fragment>
       <Button
-        variant="contained"
-        color="success"
         disabled={buttonLoading}
         onClick={handleOpen}
       >
-        {loadingSkuPo ? <CircularProgress size={24} /> : 'Create SKUs and PO'}
+        {loadingSkuPo ? <CircularProgress size={24} /> : <PlayArrowIcon color="success" />}
       </Button>
       <Dialog
         open={open}
